@@ -1,5 +1,5 @@
 defaults:
-  - model: auto-encoder
+  - model: mnist
 
 data:
   _target_: dataset.mnist.get_mnist
