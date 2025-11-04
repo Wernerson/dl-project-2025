@@ -12,3 +12,7 @@ net:
   lin2_size: 128
   lin3_size: 64
   output_size: 10
+
+criterion:
+  _target_: torch.nn.functional.cross_entropy
+  _partial_: true

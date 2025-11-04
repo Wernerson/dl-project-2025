@@ -1,7 +1,5 @@
 defaults:
   - model: mnist
-
-data:
-  _target_: dataset.mnist.get_mnist
+  - dataset: mnist
 
 seed: 42

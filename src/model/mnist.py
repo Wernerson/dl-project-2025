@@ -1,13 +1,13 @@
 import lightning as L
-import torch.nn.functional as F
 
 
 class MNIST(L.LightningModule):
 
-    def __init__(self, optimizer, net):
+    def __init__(self, optimizer, net, criterion):
         super(MNIST, self).__init__()
         self.optimizer = optimizer
         self.net = net
+        self.criterion = criterion
 
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
@@ -18,7 +18,7 @@ class MNIST(L.LightningModule):
         x, y = batch
         x = x.view(x.size(0), -1)
         x_hat = self.net(x)
-        loss = F.cross_entropy(x_hat, y)
+        loss = self.criterion(x_hat, y)
         self.log("train_loss", loss)
         return loss
 
