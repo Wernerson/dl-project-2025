@@ -10,10 +10,10 @@ def main(cfg):
         L.seed_everything(cfg.seed, workers=True)
 
     logger = instantiate(cfg.logger)
-    train, val = call(cfg.dataset)
+    dataset = instantiate(cfg.dataset)
     model = instantiate(cfg.model)
     trainer = L.Trainer(logger=logger)
-    trainer.fit(model, train, val)
+    trainer.fit(model, datamodule=dataset)
 
 
 if __name__ == "__main__":
