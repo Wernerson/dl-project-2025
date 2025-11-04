@@ -1,0 +1,4 @@
+venv/
+lightning_logs/
+*.iml
+.idea/
