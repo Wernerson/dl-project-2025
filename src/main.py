@@ -3,7 +3,7 @@ import lightning as L
 from hydra.utils import instantiate, call
 
 
-@hydra.main(version_base=None, config_path="../conf", config_name="config")
+@hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
 
     if cfg.get("seed"):
