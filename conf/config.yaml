@@ -3,3 +3,5 @@ defaults:
 
 data:
   _target_: dataset.mnist.get_mnist
+
+seed: 42
