@@ -1,2 +1,5 @@
-db:
-  driver: mysql
+defaults:
+  - model: auto-encoder
+
+data:
+  _target_: dataset.mnist.get_mnist

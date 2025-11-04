@@ -3,3 +3,4 @@ lightning_logs/
 *.iml
 .idea/
 outputs/
+data/
