@@ -1,13 +1,6 @@
-# main.py
+import hydra
 import torch, torch.nn as nn, torch.utils.data as data, torchvision as tv, torch.nn.functional as F
 import lightning as L
-
-# --------------------------------
-# Step 1: Define a LightningModule
-# --------------------------------
-# A LightningModule (nn.Module subclass) defines a full *system*
-# (ie: an LLM, diffusion model, autoencoder, or simple image classifier).
-
 
 class LitAutoEncoder(L.LightningModule):
     def __init__(self):
@@ -34,16 +27,15 @@ class LitAutoEncoder(L.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(cfg):
+    print(cfg.db.driver)
+    # dataset = tv.datasets.MNIST(".", download=True, transform=tv.transforms.ToTensor())
+    # train, val = data.random_split(dataset, [55000, 5000])
 
-# -------------------
-# Step 2: Define data
-# -------------------
-dataset = tv.datasets.MNIST(".", download=True, transform=tv.transforms.ToTensor())
-train, val = data.random_split(dataset, [55000, 5000])
+    # autoencoder = LitAutoEncoder()
+    # trainer = L.Trainer()
+    # trainer.fit(autoencoder, data.DataLoader(train), data.DataLoader(val))
 
-# -------------------
-# Step 3: Train
-# -------------------
-autoencoder = LitAutoEncoder()
-trainer = L.Trainer()
-trainer.fit(autoencoder, data.DataLoader(train), data.DataLoader(val))
+if __name__ == "__main__":
+    main()
