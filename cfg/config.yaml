@@ -1,8 +1,9 @@
 defaults:
   - model: midi
   - dataset: lakh-midi
-  - logger: tensorboard
+  - logger: wandb
 
+experiment_name: base
 seed: 42
 
 paths:
