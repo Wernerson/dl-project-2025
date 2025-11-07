@@ -1,0 +1,5 @@
+_target_: dataset.midi.MIDIDataModule
+data_dir: "${paths.data_dir}"
+download_url: http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz
+batch_size: 32
+splits: [0.8, 0.1, 0.1] # train, val, test

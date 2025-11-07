@@ -1,6 +1,6 @@
 defaults:
-  - model: mnist
-  - dataset: mnist
+  - model: midi
+  - dataset: lakh-midi
   - logger: tensorboard
 
 seed: 42

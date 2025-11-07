@@ -1,8 +1,8 @@
 import lightning as L
 import torch
 from torch.utils.data import random_split, DataLoader
-from torchvision.datasets import MNIST
 from torchvision import transforms
+from torchvision.datasets import MNIST
 
 
 class MNISTDataModule(L.LightningDataModule):

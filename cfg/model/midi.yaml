@@ -1,0 +1,18 @@
+_target_: model.midi.MIDI
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+
+net:
+  _target_: net.simple.SimpleDenseNet
+  input_size: 784
+  lin1_size: 64
+  lin2_size: 128
+  lin3_size: 64
+  output_size: 10
+
+criterion:
+  _target_: torch.nn.functional.cross_entropy
+  _partial_: true
