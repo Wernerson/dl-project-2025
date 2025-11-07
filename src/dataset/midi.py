@@ -7,6 +7,7 @@ import torch
 from note_seq import midi_to_note_sequence, MIDIConversionError
 from torch.utils.data import random_split, DataLoader, Dataset
 
+from libs.schmubert.preprocessing.data import TrioConverter
 
 class MIDIDataset(Dataset):
     def __init__(self, dir, no_files, suffix):
@@ -86,11 +87,15 @@ class MIDIDataModule(L.LightningDataModule):
             os.makedirs(self.prep_dir)
 
         print("Converting data...")
+        converter = TrioConverter(slice_bars=16)
         for i in range(1, self.no_files + 1):
             file = os.path.join(self.raw_dir, f"{i}.midi")
             print("pre", file)
             try:
                 ns = midi_to_note_sequence(open(file, 'rb').read())
+                result = converter.to_tensors(ns)
+                print(result)
+                exit()
             except MIDIConversionError:
                 pass  # ignore
             print("post")

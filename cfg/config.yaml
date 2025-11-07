@@ -25,3 +25,7 @@ paths:
 
   # path to working directory
   work_dir: ${hydra:runtime.cwd}
+
+# external libraries in "src/libs" added to path for import
+libs:
+  - "schmubert"
