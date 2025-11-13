@@ -9,11 +9,11 @@ import lightning as L
 import numpy as np
 import torch
 from libs.schmubert.prepare_data import _load_midi_trio
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 
-def load_lakh_trio(path: str, cache_path: str, bars=16, max_tensors_per_ns=5):
+def load_lakh_trio(path: str, bars=16, max_tensors_per_ns=5):
     root_dir = Path(path)
     p = Pool(4)
     midis = sorted(root_dir.rglob("*.mid"))
@@ -24,25 +24,7 @@ def load_lakh_trio(path: str, cache_path: str, bars=16, max_tensors_per_ns=5):
     )
 
     result = list(itertools.chain(*result))
-    np.save(cache_path, result)
     return np.array(result)
-
-
-class MIDIDataset(Dataset):
-    def __init__(self, dir, no_files, suffix):
-        super(MIDIDataset, self).__init__()
-        self.dir = dir
-        self.no_files = no_files
-        self.suffix = suffix
-
-    def __len__(self):
-        return self.no_files
-
-    def __getitem__(self, idx):
-        file = os.path.join(self.dir, f"{idx}{self.suffix}")
-        # todo https://github.com/dvruette/figaro/blob/main/src/datasets.py#L190
-        # todo https://github.com/plassma/symbolic-music-discrete-diffusion/blob/master/prepare_data.py
-        return file
 
 
 class MIDIDataModule(L.LightningDataModule):
@@ -91,19 +73,13 @@ class MIDIDataModule(L.LightningDataModule):
         # converting data
         if not os.path.exists(self.cache_file):
             print("Converting data...")
-            result = load_lakh_trio(path=self.raw_dir, cache_path=self.cache_file)
+            data = load_lakh_trio(path=self.raw_dir)
+            np.save(self.cache_file, data)
             print("Data converted.")
-        else:
-            print("Data present. Reading it...")
-            result = np.load(self.cache_file)
-            print("Data read.")
-        print(result.shape)
-        exit()
 
     def setup(self, stage: str):
-        # full_set = MIDIDataset(self.raw_dir, self.no_files, ".midi")
-        # self.train_set, self.val_set, self.test_set = random_split(full_set, self.splits)
-        pass
+        data = np.load(self.cache_file)
+        self.train_set, self.val_set, self.test_set = random_split(data, self.splits)
 
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size)
