@@ -1,13 +1,32 @@
+import itertools
 import os
-import shutil
 import tarfile
+from functools import partial
+from multiprocessing import Pool
+from pathlib import Path
 
 import lightning as L
+import numpy as np
 import torch
-from note_seq import midi_to_note_sequence, MIDIConversionError
-from torch.utils.data import random_split, DataLoader, Dataset
+from libs.schmubert.prepare_data import _load_midi_trio
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
-from libs.schmubert.preprocessing.data import TrioConverter
+
+def load_lakh_trio(path: str, cache_path: str, bars=16, max_tensors_per_ns=5):
+    root_dir = Path(path)
+    p = Pool(4)
+    midis = sorted(root_dir.rglob("*.mid"))
+    result = list(
+        tqdm(p.imap(
+            partial(_load_midi_trio, bars, max_tensors_per_ns), midis
+        ), total=len(midis), miniters=1)
+    )
+
+    result = list(itertools.chain(*result))
+    np.save(cache_path, result)
+    return np.array(result)
+
 
 class MIDIDataset(Dataset):
     def __init__(self, dir, no_files, suffix):
@@ -31,8 +50,7 @@ class MIDIDataModule(L.LightningDataModule):
         super().__init__()
         self.data_dir = os.path.join(data_dir, "MIDI")
         self.raw_dir = os.path.join(self.data_dir, "raw")
-        self.prep_dir = os.path.join(self.data_dir, "prep")
-        self.info_file = os.path.join(self.data_dir, "info.txt")
+        self.cache_file = os.path.join(self.data_dir, "cache.npy")
         self.download_url = download_url
         self.batch_size = batch_size
         self.splits = splits
@@ -43,23 +61,19 @@ class MIDIDataModule(L.LightningDataModule):
         self.val_set = None
 
     def prepare_data(self):
-        # download data
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
 
+        # download data
         tar_file = os.path.join(self.data_dir, "data.tar.gz")
         if not os.path.exists(tar_file):
+            print("Downloading tar file...")
             torch.hub.download_url_to_file(self.download_url, tar_file)
+            print("Download complete.")
 
         # extracting archive
-        if not os.path.exists(self.info_file):
-            print("Deleting corrupted data...")
-            shutil.rmtree(self.raw_dir)
-            print("Done.")
-
         if not os.path.exists(self.raw_dir):
             print("Extracting archive...")
-
             no_files = 0
 
             def tar_filter(info, _):
@@ -67,43 +81,29 @@ class MIDIDataModule(L.LightningDataModule):
                 if not info.isfile():
                     return None
                 no_files += 1
-                return info.replace(name=f"{no_files}.midi")
+                return info.replace(name=f"{no_files}.mid")
 
             with tarfile.open(tar_file) as file:
                 file.extractall(self.raw_dir, filter=tar_filter)
 
-            with open(self.info_file, "wt") as file:
-                file.write(f"{no_files}")
-
-            self.no_files = no_files
             print(f"{no_files} files extracted.")
-        else:
-            with open(self.info_file, "rt") as file:
-                self.no_files = int(file.read())
-            print(f"{self.no_files} already present.")
 
         # converting data
-        if not os.path.exists(self.prep_dir):
-            os.makedirs(self.prep_dir)
-
-        print("Converting data...")
-        converter = TrioConverter(slice_bars=16)
-        for i in range(1, self.no_files + 1):
-            file = os.path.join(self.raw_dir, f"{i}.midi")
-            print("pre", file)
-            try:
-                ns = midi_to_note_sequence(open(file, 'rb').read())
-                result = converter.to_tensors(ns)
-                print(result)
-                exit()
-            except MIDIConversionError:
-                pass  # ignore
-            print("post")
-        print("Data converted.")
+        if not os.path.exists(self.cache_file):
+            print("Converting data...")
+            result = load_lakh_trio(path=self.raw_dir, cache_path=self.cache_file)
+            print("Data converted.")
+        else:
+            print("Data present. Reading it...")
+            result = np.load(self.cache_file)
+            print("Data read.")
+        print(result.shape)
+        exit()
 
     def setup(self, stage: str):
-        full_set = MIDIDataset(self.raw_dir, self.no_files, ".midi")
-        self.train_set, self.val_set, self.test_set = random_split(full_set, self.splits)
+        # full_set = MIDIDataset(self.raw_dir, self.no_files, ".midi")
+        # self.train_set, self.val_set, self.test_set = random_split(full_set, self.splits)
+        pass
 
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size)
