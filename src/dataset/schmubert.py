@@ -103,5 +103,4 @@ class SchmubertDataSampler(SchmubertMIDIData):
     def setup(self, stage: str):
         data = np.load(self.cache_file)
         data = SubseqSampler(data, self.seq_len)
-        print("DATA LEN", len(data))
         self.train_set, self.val_set, self.test_set = random_split(data, self.splits)
