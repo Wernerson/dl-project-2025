@@ -9,6 +9,7 @@ import lightning as L
 import numpy as np
 import torch
 from libs.schmubert.prepare_data import _load_midi_trio
+from libs.schmubert.utils.data_utils import SubseqSampler
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
@@ -27,9 +28,9 @@ def load_lakh_trio(path: str, bars=16, max_tensors_per_ns=5):
     return np.array(result)
 
 
-class MIDIDataModule(L.LightningDataModule):
+class SchmubertMIDIData(L.LightningDataModule):
     def __init__(self, data_dir: str, download_url: str, batch_size: int, splits):
-        super().__init__()
+        super(SchmubertMIDIData, self).__init__()
         self.data_dir = os.path.join(data_dir, "MIDI")
         self.raw_dir = os.path.join(self.data_dir, "raw")
         self.cache_file = os.path.join(self.data_dir, "cache.npy")
@@ -92,3 +93,15 @@ class MIDIDataModule(L.LightningDataModule):
 
     def predict_dataloader(self):
         raise ValueError("Not supported yet.")
+
+
+class SchmubertDataSampler(SchmubertMIDIData):
+    def __init__(self, data_dir: str, download_url: str, batch_size: int, splits, seq_len):
+        super(SchmubertDataSampler, self).__init__(data_dir, download_url, batch_size, splits)
+        self.seq_len = seq_len
+
+    def setup(self, stage: str):
+        data = np.load(self.cache_file)
+        data = SubseqSampler(data, self.seq_len)
+        print("DATA LEN", len(data))
+        self.train_set, self.val_set, self.test_set = random_split(data, self.splits)

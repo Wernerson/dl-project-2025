@@ -1,7 +1,7 @@
 # @package _global_
 defaults:
-  - override /dataset: lakh-midi
-  - override /model: midi
+  - override /dataset: schmubert
+  - override /model: schmubert
   - override /logger: tensorboard
 
 experiment_name: midi
