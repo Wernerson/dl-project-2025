@@ -4,11 +4,11 @@ import math
 import lightning as L
 import torch
 import torch.nn.functional as F
-
-from libs.schmubert.models.absorbing_diffusion import AbsorbingDiffusion
 from libs.schmubert.hparams.default_hparams import HparamsAbsorbingConv
 from libs.schmubert.hparams.set_up_hparams import add_common_args, add_train_args
 from libs.schmubert.models import ConVormer
+from libs.schmubert.models.absorbing_diffusion import AbsorbingDiffusion
+
 
 def fake_args(args):
     parser = argparse.ArgumentParser()
@@ -34,8 +34,7 @@ class Schmubert(L.LightningModule):
     def forward(self, x):
         return self.net(x)
 
-    def training_step(self, batch, batch_idx):
-        x_0 = batch
+    def _sample_forward_loss(self, x_0):
         b, device = x_0.size(0), x_0.device
 
         # choose what time steps to compute loss at
@@ -56,9 +55,16 @@ class Schmubert(L.LightningModule):
         loss = cross_entropy_loss / t
         loss = loss / pt
         loss = loss / (math.log(2) * x_0.shape[1:].numel())
-        loss = loss.mean()
+        return loss.mean()
 
+    def training_step(self, batch, batch_idx):
+        loss = self._sample_forward_loss(batch)
         self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        loss = self._sample_forward_loss(batch)
+        self.log("val_loss", loss)
         return loss
 
     def configure_optimizers(self):
