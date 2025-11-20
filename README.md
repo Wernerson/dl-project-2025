@@ -11,3 +11,9 @@
 2. `git submodule add --name <name> -f <repo_url> ./<name>`
 3. add `<name>` to `libs` in `cfg/config.yaml`
 4. import library in code with `libs.<name>`
+
+### Run the training
+
+```bash
+python src/main.py +experiment=<my_experiment>
+```
