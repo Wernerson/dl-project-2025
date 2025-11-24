@@ -8,5 +8,8 @@ tokenizer:
   _args_:
     - _target_: miditok.TokenizerConfig
       num_velocities: 16
-      use_chords: True
       use_programs: True
+      use_velocities: True
+      using_note_duration_tokens: True
+      use_tempos: True
+      use_time_signatures: True

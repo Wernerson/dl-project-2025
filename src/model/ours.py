@@ -17,9 +17,7 @@ class OurModel(L.LightningModule):
     def noise(self, x_0, t):
         pass  # todo
 
-    def training_step(self, batch, batch_idx):
-        x_0 = batch
-
+    def _sample_forward_loss(self, x_0):
         # sample time stamp in denoising process
         T = 1000  # todo configure, including max?
         t = random.randint(0, T)
@@ -32,13 +30,15 @@ class OurModel(L.LightningModule):
 
         # loss
         loss = self.criterion(x_0, x_0_hat)
+        return loss
 
+    def training_step(self, batch, batch_idx):
+        loss = self._sample_forward_loss(batch)
         self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        # todo
-        loss = None
+        loss = self._sample_forward_loss(batch)
         self.log("val/loss", loss)
         return loss
 
