@@ -1,6 +1,7 @@
 import random
 
 import lightning as L
+import torch
 
 
 class OurModel(L.LightningModule):
@@ -15,11 +16,14 @@ class OurModel(L.LightningModule):
         return self.net(x)
 
     def noise(self, x_0, t):
-        pass  # todo
+        T = x_0.shape[1] * x_0.shape[2]
+        p = torch.randperm(T, device=x_0.device).reshape(x_0.shape)
+        m = p > t
+        return m * x_0
 
     def _sample_forward_loss(self, x_0):
         # sample time stamp in denoising process
-        T = 1000  # todo configure, including max?
+        T = x_0.shape[1] * x_0.shape[2]
         t = random.randint(0, T)
 
         # noise / mask the sample
@@ -33,12 +37,12 @@ class OurModel(L.LightningModule):
         return loss
 
     def training_step(self, batch, batch_idx):
-        loss = self._sample_forward_loss(batch)
+        loss = self._sample_forward_loss(batch["input_ids"])
         self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss = self._sample_forward_loss(batch)
+        loss = self._sample_forward_loss(batch["input_ids"])
         self.log("val/loss", loss)
         return loss
 

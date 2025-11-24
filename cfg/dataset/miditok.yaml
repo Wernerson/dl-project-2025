@@ -2,6 +2,7 @@ defaults:
   - lakh-MIDI
 
 _target_: dataset.miditok.MIDITok
+batch_size: 1
 max_seq_len: 128
 tokenizer:
   _target_: miditok.Octuple
