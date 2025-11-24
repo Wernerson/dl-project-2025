@@ -2,3 +2,11 @@ defaults:
   - lakh-MIDI
 
 _target_: dataset.miditok.MIDITok
+max_seq_len: 128
+tokenizer:
+  _target_: miditok.Octuple
+  _args_:
+    - _target_: miditok.TokenizerConfig
+      num_velocities: 16
+      use_chords: True
+      use_programs: True

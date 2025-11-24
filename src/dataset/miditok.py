@@ -8,11 +8,9 @@ from miditok.pytorch_data import DatasetMIDI, DataCollator
 from miditok.utils import split_files_for_training
 from torch.utils.data import DataLoader, random_split
 
-from miditok import REMI, TokenizerConfig
-
 
 class MIDITok(L.LightningDataModule):
-    def __init__(self, data_dir: str, download_url: str, batch_size: int, splits):
+    def __init__(self, data_dir: str, download_url: str, batch_size: int, splits, max_seq_len, tokenizer):
         super(MIDITok, self).__init__()
         self.data_dir = os.path.join(data_dir, "MIDITok")
         self.raw_dir = os.path.join(self.data_dir, "raw")
@@ -20,10 +18,8 @@ class MIDITok(L.LightningDataModule):
         self.download_url = download_url
         self.batch_size = batch_size
         self.splits = splits
-
-        # Creating a multitrack tokenizer configuration, read the doc to explore other parameters
-        config = TokenizerConfig(num_velocities=16, use_chords=True, use_programs=True)
-        self.tokenizer = REMI(config)
+        self.max_seq_len = max_seq_len
+        self.tokenizer = tokenizer
 
         self.train_set = None
         self.test_set = None
@@ -64,7 +60,7 @@ class MIDITok(L.LightningDataModule):
                 files_paths=list(Path(self.raw_dir).absolute().glob("**/*.mid")),
                 tokenizer=self.tokenizer,
                 save_dir=Path(self.processed_dir),
-                max_seq_len=1024,
+                max_seq_len=self.max_seq_len,
             )
 
     def setup(self, stage: str):
