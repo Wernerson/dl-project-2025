@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - override /dataset: miditok
+  - override /model: schmubert
+  - override /logger: tensorboard
+
+experiment_name: miditok

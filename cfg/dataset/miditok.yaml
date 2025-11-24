@@ -1,0 +1,4 @@
+defaults:
+  - lakh-MIDI
+
+_target_: dataset.miditok.MIDITok
