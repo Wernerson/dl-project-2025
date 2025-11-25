@@ -6,13 +6,13 @@ optimizer:
   lr: 0.0005
 
 net:
-  _target_: net.musicbert.MusicBERT
-  input_size: 784
-  lin1_size: 64
-  lin2_size: 128
-  lin3_size: 64
-  output_size: 10
+  _target_: torch.nn.TransformerEncoder
+  encoder_layer:
+    _target_: torch.nn.TransformerEncoderLayer
+    d_model: 8
+    nhead: 8
+  num_layers: 6
 
 criterion:
-  _target_: torch.nn.functional.cross_entropy
+  _target_: torch.nn.functional.mse_loss
   _partial_: true

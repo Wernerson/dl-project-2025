@@ -16,14 +16,15 @@ class OurModel(L.LightningModule):
         return self.net(x)
 
     def noise(self, x_0, t):
-        T = x_0.shape[1] * x_0.shape[2]
+        T = x_0.shape[0] * x_0.shape[1]
         p = torch.randperm(T, device=x_0.device).reshape(x_0.shape)
         m = p > t
         return m * x_0
 
     def _sample_forward_loss(self, x_0):
+        x_0 = x_0.squeeze(0).float()
         # sample time stamp in denoising process
-        T = x_0.shape[1] * x_0.shape[2]
+        T = x_0.shape[0] * x_0.shape[1]
         t = random.randint(0, T)
 
         # noise / mask the sample
@@ -33,7 +34,7 @@ class OurModel(L.LightningModule):
         x_0_hat = self(x_t)
 
         # loss
-        loss = self.criterion(x_0, x_0_hat)
+        loss = self.criterion(torch.round(x_0_hat), x_0)
         return loss
 
     def training_step(self, batch, batch_idx):
