@@ -15,10 +15,13 @@ class OurModel(L.LightningModule):
     def forward(self, x):
         return self.net(x)
 
-    def noise(self, x_0, t):
+    def mask(self, x_0, t):
         T = x_0.shape[0] * x_0.shape[1]
         p = torch.randperm(T, device=x_0.device).reshape(x_0.shape)
-        m = p > t
+        return p > t
+
+    def noise(self, x_0, t):
+        m = self.mask(x_0, t)
         return m * x_0
 
     def _sample_forward_loss(self, x_0):
@@ -46,6 +49,22 @@ class OurModel(L.LightningModule):
         loss = self._sample_forward_loss(batch["input_ids"])
         self.log("val/loss", loss)
         return loss
+
+    def test_step(self, batch, batch_idx):
+        loss = self._sample_forward_loss(batch["input_ids"])
+        self.log("test/loss", loss)
+        return loss
+
+    def predict_step(self, x):
+        x = x[0]
+        n = x.item()
+        T = 8 * n
+        x_t = torch.zeros((n, 8), device=x.device)
+        for t in reversed(range(T)):
+            m = self.mask(x_t, t)
+            x_t = m * self(x_t)
+        x_t[x_t < 0] = 0
+        return torch.round(x_t).long()
 
     def configure_optimizers(self):
         return self.optimizer(params=self.parameters())

@@ -3,7 +3,9 @@ from pathlib import Path
 
 import hydra
 import lightning as L
+import torch
 from hydra.utils import instantiate
+from torch.utils.data import TensorDataset
 
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
@@ -21,6 +23,14 @@ def main(cfg):
     trainer = instantiate(cfg.trainer)
     trainer.fit(model, datamodule=dataset)
 
+    seq_len = 10
+    pred = trainer.predict(model, TensorDataset(torch.tensor([seq_len])))
+    tokenizer = instantiate(cfg.dataset.tokenizer)
+    try:
+        midi = tokenizer(pred[0])
+        midi.dump_midi("outputs/pred.mid")
+    except:
+        print("Failed to generate midi.")
 
 if __name__ == "__main__":
     main()

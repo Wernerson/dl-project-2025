@@ -1,2 +1,2 @@
 trainer:
-  max_epochs: 10
+  max_epochs: 1
