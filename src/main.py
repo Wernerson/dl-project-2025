@@ -1,9 +1,10 @@
+import sys
+from pathlib import Path
+
 import hydra
 import lightning as L
 from hydra.utils import instantiate
 
-import sys
-from pathlib import Path
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
@@ -15,10 +16,9 @@ def main(cfg):
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 
-    logger = instantiate(cfg.logger)
     dataset = instantiate(cfg.dataset)
     model = instantiate(cfg.model)
-    trainer = L.Trainer(logger=logger)
+    trainer = instantiate(cfg.trainer)
     trainer.fit(model, datamodule=dataset)
 
 

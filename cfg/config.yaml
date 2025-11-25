@@ -6,6 +6,12 @@ defaults:
 experiment_name: base
 seed: 42
 
+trainer:
+  _target_: lightning.Trainer
+  logger: ${logger}
+  deterministic: true
+  max_epochs: true
+
 paths:
   # path to root directory
   # this requires PROJECT_ROOT environment variable to exist
