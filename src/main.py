@@ -3,9 +3,33 @@ from pathlib import Path
 
 import hydra
 import lightning as L
+import numpy as np
 import torch
 from hydra.utils import instantiate
+from symusic import Synthesizer, BuiltInSF3
 from torch.utils.data import TensorDataset
+
+
+def to_audio(tokenizer, predictions, sample_rate):
+    audios = []
+    for pred in predictions:
+        try:
+            midi = tokenizer(pred)
+        except:
+            print("Failed to generate midi.")
+            continue
+        # Create a synthesizer with default settings
+        synthesizer = Synthesizer(
+            sf_path=BuiltInSF3.MuseScoreGeneral().path(download=True),
+            sample_rate=sample_rate,
+            quality=4  # Default quality setting
+        )
+
+        # Render the score to audio (returns an AudioData object)
+        audio = synthesizer.render(midi, stereo=True)
+        audio = np.ravel(np.array(audio))
+        audios.append(audio)
+    return audios
 
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
@@ -18,19 +42,18 @@ def main(cfg):
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 
+    logger = instantiate(cfg.logger)
     dataset = instantiate(cfg.dataset)
     model = instantiate(cfg.model)
-    trainer = instantiate(cfg.trainer)
+    trainer = instantiate(cfg.trainer, logger=logger)
     trainer.fit(model, datamodule=dataset)
 
-    seq_len = 10
-    pred = trainer.predict(model, TensorDataset(torch.tensor([seq_len])))
+    pred_dataset = TensorDataset(torch.randint(5, 20, size=(10,)))  # during prediction, dataset=seq_len
+    predictions = trainer.predict(model, pred_dataset)
     tokenizer = instantiate(cfg.dataset.tokenizer)
-    try:
-        midi = tokenizer(pred[0])
-        midi.dump_midi("outputs/pred.mid")
-    except:
-        print("Failed to generate midi.")
+    sample_rate = 44100
+    audios = to_audio(tokenizer, predictions, sample_rate)
+    logger.log_audio("pred/samples", audios, sample_rate=[sample_rate] * len(audios))
 
 if __name__ == "__main__":
     main()
