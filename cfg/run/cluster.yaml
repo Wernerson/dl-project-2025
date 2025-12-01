@@ -2,3 +2,7 @@
 # overrides for a cluster run
 
 user: ${oc.env:USER}
+
+paths:
+  # override data storage paths
+  data_dir: /home/scratch/${user}/dl-2025/data
