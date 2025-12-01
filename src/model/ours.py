@@ -17,18 +17,18 @@ class OurModel(L.LightningModule):
         return self.net(x)
 
     def mask(self, x_0, t):
-        T = x_0.shape[0] * x_0.shape[1]
-        p = torch.randperm(T, device=x_0.device).reshape(x_0.shape)
-        return p > t
+        batch_size, seq_len, dim = x_0.shape
+        T = seq_len * dim
+        p = torch.randperm(T, device=x_0.device).reshape(seq_len, dim)
+        return (p > t).expand(batch_size, -1, -1)
 
     def noise(self, x_0, t):
         m = self.mask(x_0, t)
         return m * x_0
 
     def _sample_forward_loss(self, x_0):
-        x_0 = x_0.squeeze(0)
         # sample time stamp in denoising process
-        T = x_0.shape[0] * x_0.shape[1]
+        T = x_0.shape[1] * x_0.shape[2]
         t = random.randint(0, T)
 
         # noise / mask the sample

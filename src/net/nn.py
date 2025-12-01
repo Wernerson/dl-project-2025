@@ -35,7 +35,7 @@ class Octuple(nn.Module):
         # self.mask[:, Octuple.Tim, 254:] = True  # Time Signature
 
     def forward(self, x):
-        x = x.reshape(-1, 8, 256)
+        x = x.reshape(x.shape[0], x.shape[1], 8, 256)
         # mask = self.mask.to(x.device)
         # x = x.masked_fill(mask, float("-inf"))
         return x
@@ -60,3 +60,25 @@ class Octuple(nn.Module):
         """
         x = z.argmax(dim=-1)
         return x
+
+
+if __name__ == "__main__":
+    """
+    ONLY FOR TESTING PURPOSES!
+    """
+    net = nn.Sequential(
+        nn.Linear(8, 32),
+        nn.ReLU(),
+        nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=32, nhead=8, batch_first=True
+            ), num_layers=6
+        ),
+        nn.Linear(32, 2048),
+        nn.ReLU(),
+        Octuple(),
+        nn.Softmax(dim=-1)
+    )
+    x = torch.round(torch.abs(torch.randn(64, 20, 8)) * 10)
+    z = net(x)
+    print(z.shape)
