@@ -70,7 +70,7 @@ class MIDITok(L.LightningDataModule):
         dataset = DatasetMIDI(
             files_paths=list(Path(self.processed_dir).glob("**/*.mid")),
             tokenizer=self.tokenizer,
-            max_seq_len=1024,
+            max_seq_len=self.max_seq_len,
             bos_token_id=self.tokenizer["BOS_None"],
             eos_token_id=self.tokenizer["EOS_None"],
         )
