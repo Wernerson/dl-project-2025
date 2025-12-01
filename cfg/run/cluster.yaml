@@ -5,4 +5,4 @@ user: ${oc.env:USER}
 
 paths:
   # override data storage paths
-  data_dir: /home/scratch/${user}/dl-2025/data
+  data_dir: /work/scratch/${user}/dl-2025/data
