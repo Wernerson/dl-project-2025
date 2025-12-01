@@ -78,15 +78,15 @@ class MIDITok(L.LightningDataModule):
         self.train_set, self.val_set, self.test_set = random_split(dataset, self.splits)
 
     def train_dataloader(self):
-        collator = DataCollator(self.tokenizer.pad_token_id, copy_inputs_as_labels=True)
+        collator = DataCollator(self.tokenizer.pad_token_id)
         return DataLoader(self.train_set, batch_size=self.batch_size, collate_fn=collator)
 
     def val_dataloader(self):
-        collator = DataCollator(self.tokenizer.pad_token_id, copy_inputs_as_labels=True)
+        collator = DataCollator(self.tokenizer.pad_token_id)
         return DataLoader(self.val_set, batch_size=self.batch_size, collate_fn=collator)
 
     def test_dataloader(self):
-        collator = DataCollator(self.tokenizer.pad_token_id, copy_inputs_as_labels=True)
+        collator = DataCollator(self.tokenizer.pad_token_id)
         return DataLoader(self.test_set, batch_size=self.batch_size, collate_fn=collator)
 
     def predict_dataloader(self):
