@@ -10,7 +10,7 @@ trainer:
   _target_: lightning.Trainer
   logger: ${logger}
   deterministic: true
-  max_epochs: true
+  max_epochs: 10
 
 paths:
   # path to root directory

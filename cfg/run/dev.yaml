@@ -3,5 +3,6 @@
 
 trainer:
   max_epochs: 1
+  fast_dev_run: true
 logger:
   offline: true
