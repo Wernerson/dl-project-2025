@@ -1,0 +1,4 @@
+# @package _global_
+# overrides for a cluster run
+
+user: ${oc.env:USER}

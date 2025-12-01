@@ -17,7 +17,7 @@
     - `pip install miditok hydra-core lightning wandb`
 - Login to WandB
     - `wandb login <key>`
-- Run jobs with: `sbatch run.sh`
+- Run jobs with: `sbatch run.sh <experiment name here>`
     - [Running jobs](https://www.isg.inf.ethz.ch/Main/HelpClusterComputingStudentClusterRunningJobs)
 
 ### Add an external library / repo
@@ -30,5 +30,8 @@
 ### Run the training
 
 ```bash
-python src/main.py +experiment=<my_experiment>
+python src/main.py +experiment=<my_experiment> +run=dev
 ```
+
+Note that `+run=dev` uses the `run/dev.yaml` config, which does not log to WandB and only trains 1 epoch (for quick
+runs).

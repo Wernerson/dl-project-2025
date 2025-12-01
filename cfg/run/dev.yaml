@@ -1,2 +1,7 @@
+# @package _global_
+# overrides for local runs
+
 trainer:
   max_epochs: 1
+logger:
+  offline: true
