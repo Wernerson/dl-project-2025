@@ -55,6 +55,7 @@ class MIDITok(L.LightningDataModule):
 
         # Converting data
         if not os.path.exists(self.processed_dir):
+            print("Tokenizing data...")
             # Split MIDIs into smaller chunks for training
             split_files_for_training(
                 files_paths=list(Path(self.raw_dir).absolute().glob("**/*.mid")),
@@ -62,6 +63,7 @@ class MIDITok(L.LightningDataModule):
                 save_dir=Path(self.processed_dir),
                 max_seq_len=self.max_seq_len,
             )
+            print("Data tokenized.")
 
     def setup(self, stage: str):
         # Create a Dataset, a DataLoader and a collator to train a model

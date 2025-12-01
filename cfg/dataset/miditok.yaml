@@ -14,3 +14,4 @@ tokenizer:
       using_note_duration_tokens: True
       use_tempos: True
       use_time_signatures: True
+      max_bar_embedding: 256
