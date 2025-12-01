@@ -5,6 +5,14 @@
 
 ## How to...
 
+### Setup the cluster
+
+- [PyTorch & Cuda Guide](https://www.isg.inf.ethz.ch/Main/HelpClusterComputingStudentClusterCuda)
+    - Furthermore, after `venv` creation and activation, run:
+    - `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128 --upgrade`
+    - `pip install miditok hydra-core lightning wandb`
+- [Running jobs](https://www.isg.inf.ethz.ch/Main/HelpClusterComputingStudentClusterRunningJobs)
+
 ### Add an external library / repo
 
 1. `cd src/libs`
