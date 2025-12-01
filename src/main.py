@@ -11,6 +11,11 @@ from torch.utils.data import TensorDataset
 
 
 def to_audio(tokenizer, predictions, sample_rate):
+    synthesizer = Synthesizer(
+        sf_path=BuiltInSF3.MuseScoreGeneral().path(download=True),
+        sample_rate=sample_rate,
+        quality=4
+    )
     audios = []
     for pred in predictions:
         try:
@@ -18,14 +23,6 @@ def to_audio(tokenizer, predictions, sample_rate):
         except:
             print("Failed to generate midi.")
             continue
-        # Create a synthesizer with default settings
-        synthesizer = Synthesizer(
-            sf_path=BuiltInSF3.MuseScoreGeneral().path(download=True),
-            sample_rate=sample_rate,
-            quality=4  # Default quality setting
-        )
-
-        # Render the score to audio (returns an AudioData object)
         audio = synthesizer.render(midi, stereo=True)
         audio = np.ravel(np.array(audio))
         audios.append(audio)

@@ -2,6 +2,7 @@ import random
 
 import lightning as L
 import torch
+from net.nn import Octuple
 
 
 class OurModel(L.LightningModule):
@@ -25,7 +26,7 @@ class OurModel(L.LightningModule):
         return m * x_0
 
     def _sample_forward_loss(self, x_0):
-        x_0 = x_0.squeeze(0).float()
+        x_0 = x_0.squeeze(0)
         # sample time stamp in denoising process
         T = x_0.shape[0] * x_0.shape[1]
         t = random.randint(0, T)
@@ -34,10 +35,10 @@ class OurModel(L.LightningModule):
         x_t = self.noise(x_0, t)
 
         # denoise / unmask the sample
-        x_0_hat = self(x_t)
+        x_0_hat = self(x_t.float())
 
         # loss
-        loss = self.criterion(torch.round(x_0_hat), x_0)
+        loss = self.criterion(x_0_hat, Octuple.encode(x_0).float())
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -62,9 +63,8 @@ class OurModel(L.LightningModule):
         x_t = torch.zeros((n, 8), device=x.device)
         for t in reversed(range(T)):
             m = self.mask(x_t, t)
-            x_t = m * self(x_t)
-        x_t[x_t < 0] = 0
-        return torch.round(x_t).long()
+            x_t = m * Octuple.decode(self(x_t.float()))
+        return x_t
 
     def configure_optimizers(self):
         return self.optimizer(params=self.parameters())

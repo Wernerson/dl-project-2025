@@ -2,6 +2,5 @@
 defaults:
   - override /dataset: miditok
   - override /model: ours
-  - override /logger: tensorboard
 
 experiment_name: miditok
