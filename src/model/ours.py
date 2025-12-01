@@ -57,10 +57,11 @@ class OurModel(L.LightningModule):
         return loss
 
     def predict_step(self, x):
+        # this is currently unbatched...
         x = x[0]
         n = x.item()
         T = 8 * n
-        x_t = torch.zeros((n, 8), device=x.device)
+        x_t = torch.zeros((1, n, 8), device=x.device)
         for t in reversed(range(T)):
             m = self.mask(x_t, t)
             x_t = m * Octuple.decode(self(x_t.float()))
