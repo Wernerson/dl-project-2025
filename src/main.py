@@ -1,11 +1,9 @@
-import random
 import sys
 from pathlib import Path
 
 import hydra
 import lightning as L
 import numpy as np
-import torch
 from hydra.utils import instantiate
 from symusic import Synthesizer, BuiltInSF3
 
@@ -23,7 +21,11 @@ def to_audio(tokenizer, predictions, sample_rate):
         except:
             print("Failed to generate midi.")
             continue
-        audio = synthesizer.render(midi, stereo=True)
+        try:
+            audio = synthesizer.render(midi, stereo=True)
+        except:
+            print("Failed to convert midi to audio.")
+            continue
         audio = np.ravel(np.array(audio))
         audios.append(audio)
     return audios
@@ -45,14 +47,13 @@ def main(cfg):
     trainer = instantiate(cfg.trainer, logger=logger)
     trainer.fit(model, datamodule=dataset)
 
-    print("Generating some samples... (hopefully...)")
-    model.eval()
-    model.freeze()
-    predictions = []
-    with torch.no_grad():
-        for i in range(10):
-            t = torch.tensor(random.randint(5, 20))
-            predictions += model.predict_step(t)
+    print("Generating some samples (hopefully)...")
+    # for some reason trainer.predict is bugged, we iterate manually...
+    predictions = [
+        # trainer.predict(model, dataloaders=[1, 2, 3], ckpt_path="outputs/ckpts/2.ckpt")[0] # use this if checkpoint present
+        trainer.predict(model, dataloaders=[1, 2, 3])[0]  # use this if not
+        for _ in range(5)
+    ]
     tokenizer = instantiate(cfg.dataset.tokenizer)
     sample_rate = 44100
     audios = to_audio(tokenizer, predictions, sample_rate)

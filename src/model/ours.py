@@ -19,7 +19,7 @@ class OurModel(L.LightningModule):
     def mask(self, x_0, t):
         batch_size, seq_len, dim = x_0.shape
         T = seq_len * dim
-        p = torch.randperm(T, device=x_0.device).reshape(seq_len, dim)
+        p = torch.randperm(T, device=self.device).reshape(seq_len, dim)
         return (p > t).expand(batch_size, -1, -1)
 
     def noise(self, x_0, t):
@@ -56,11 +56,11 @@ class OurModel(L.LightningModule):
         self.log("test/loss", loss)
         return loss
 
-    def predict_step(self, x, dataloader_idx=0):
-        # this is currently unbatched...
-        n = x.item()
+    def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        # input is currently irrelevant
+        n = random.randint(10, 20)
         T = 4 * n
-        x_t = torch.zeros((1, n, 4), device=x.device)
+        x_t = torch.zeros((1, n, 4), device=self.device)
         for t in reversed(range(T)):
             m = self.mask(x_t, t)
             x_t = m * Octuple.decode(self(x_t.float()))
