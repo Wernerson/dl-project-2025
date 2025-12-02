@@ -9,19 +9,19 @@ net:
   _target_: torch.nn.Sequential
   _args_:
     - _target_: torch.nn.Linear # upscale to embedding space
-      in_features: 8
+      in_features: 4
       out_features: 256
     - _target_: torch.nn.ReLU
     - _target_: torch.nn.TransformerEncoder # transform
       encoder_layer:
         _target_: torch.nn.TransformerEncoderLayer
         d_model: 256
-        nhead: 8
+        nhead: 4
         batch_first: true
       num_layers: 6
     - _target_: torch.nn.Linear # downscale
       in_features: 256
-      out_features: 2048 # 8 * 256
+      out_features: 516 # 4 * 129
     - _target_: torch.nn.ReLU
     - _target_: net.nn.Octuple # format output
     - _target_: torch.nn.Softmax

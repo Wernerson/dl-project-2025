@@ -56,12 +56,11 @@ class OurModel(L.LightningModule):
         self.log("test/loss", loss)
         return loss
 
-    def predict_step(self, x):
+    def predict_step(self, x, dataloader_idx=0):
         # this is currently unbatched...
-        x = x[0]
         n = x.item()
-        T = 8 * n
-        x_t = torch.zeros((1, n, 8), device=x.device)
+        T = 4 * n
+        x_t = torch.zeros((1, n, 4), device=x.device)
         for t in reversed(range(T)):
             m = self.mask(x_t, t)
             x_t = m * Octuple.decode(self(x_t.float()))

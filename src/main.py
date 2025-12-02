@@ -1,3 +1,4 @@
+import random
 import sys
 from pathlib import Path
 
@@ -7,7 +8,6 @@ import numpy as np
 import torch
 from hydra.utils import instantiate
 from symusic import Synthesizer, BuiltInSF3
-from torch.utils.data import TensorDataset
 
 
 def to_audio(tokenizer, predictions, sample_rate):
@@ -19,7 +19,7 @@ def to_audio(tokenizer, predictions, sample_rate):
     audios = []
     for pred in predictions:
         try:
-            midi = tokenizer(pred)
+            midi = tokenizer(pred.unsqueeze(0))
         except:
             print("Failed to generate midi.")
             continue
@@ -45,12 +45,19 @@ def main(cfg):
     trainer = instantiate(cfg.trainer, logger=logger)
     trainer.fit(model, datamodule=dataset)
 
-    pred_dataset = TensorDataset(torch.randint(5, 20, size=(10,)))  # during prediction, dataset=seq_len
-    predictions = trainer.predict(model, pred_dataset)
+    print("Generating some samples... (hopefully...)")
+    model.eval()
+    model.freeze()
+    predictions = []
+    with torch.no_grad():
+        for i in range(10):
+            t = torch.tensor(random.randint(5, 20))
+            predictions += model.predict_step(t)
     tokenizer = instantiate(cfg.dataset.tokenizer)
     sample_rate = 44100
     audios = to_audio(tokenizer, predictions, sample_rate)
     logger.log_audio("pred/samples", audios, sample_rate=[sample_rate] * len(audios))
+
 
 if __name__ == "__main__":
     main()

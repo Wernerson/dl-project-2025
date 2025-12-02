@@ -8,10 +8,9 @@ tokenizer:
   _target_: miditok.Octuple
   _args_:
     - _target_: miditok.TokenizerConfig
-      num_velocities: 16
-      use_programs: True
-      use_velocities: True
-      using_note_duration_tokens: True
-      use_tempos: True
-      use_time_signatures: True
-      max_bar_embedding: 256
+      use_programs: False
+      use_velocities: False
+      use_tempos: False
+      use_time_signatures: False
+      use_pitchdrum_tokens: False
+      max_bar_embedding: 128

@@ -35,7 +35,7 @@ class Octuple(nn.Module):
         # self.mask[:, Octuple.Tim, 254:] = True  # Time Signature
 
     def forward(self, x):
-        x = x.reshape(x.shape[0], x.shape[1], 8, 256)
+        x = x.reshape(x.shape[0], x.shape[1], 4, 129)
         # mask = self.mask.to(x.device)
         # x = x.masked_fill(mask, float("-inf"))
         return x
@@ -48,7 +48,7 @@ class Octuple(nn.Module):
         :param x: the tensor to be encoded, must be OctupleMIDI format (last dim=8).
         :return: One-hot encoded tensor, same as Octuple layer output (last dim=256).
         """
-        z = F.one_hot(x, 256)
+        z = F.one_hot(x, 129)
         return z
 
     @staticmethod
@@ -67,18 +67,19 @@ if __name__ == "__main__":
     ONLY FOR TESTING PURPOSES!
     """
     net = nn.Sequential(
-        nn.Linear(8, 32),
+        nn.Linear(4, 256),
         nn.ReLU(),
         nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
-                d_model=32, nhead=8, batch_first=True
+                d_model=256, nhead=4, batch_first=True
             ), num_layers=6
         ),
-        nn.Linear(32, 2048),
+        nn.Linear(256, 516),
         nn.ReLU(),
         Octuple(),
         nn.Softmax(dim=-1)
     )
-    x = torch.round(torch.abs(torch.randn(64, 20, 8)) * 10)
-    z = net(x)
-    print(z.shape)
+    x = torch.round(torch.abs(torch.randn(64, 20, 4)) * 10)
+    y = net(x)
+    print(y.shape)
+    print(Octuple.decode(y))
