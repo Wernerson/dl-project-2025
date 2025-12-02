@@ -7,3 +7,5 @@ trainer:
 logger:
   offline: true
   log_model: false
+dataset:
+  batch_size: 16
