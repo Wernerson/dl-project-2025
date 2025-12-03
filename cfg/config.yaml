@@ -11,6 +11,23 @@ trainer:
   logger: ${logger}
   deterministic: true
   max_epochs: 10
+  callbacks:
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint # periodic checkpoints
+      dirpath: ${paths.checkpoints_dir}
+      filename: periodic-{epoch}-{val/loss:.2f}
+      save_last: true
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint # best checkpoints
+      dirpath: ${paths.checkpoints_dir}
+      filename: best-{epoch}-{val/loss:.2f}
+      save_top_k: 3
+      monitor: val/loss
+      mode: min
+    - _target_: lightning.pytorch.callbacks.LearningRateMonitor
+      logging_interval: epoch
+      log_momentum: true
+    - _target_: lightning.pytorch.callbacks.BatchSizeFinder
+    - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor
+    - _target_: lightning.pytorch.callbacks.ModelSummary
 
 paths:
   # path to root directory
@@ -21,9 +38,6 @@ paths:
   # path to data directory
   data_dir: ${paths.root_dir}/data/
 
-  # path to logging directory
-  log_dir: ${paths.root_dir}/logs/
-
   # path to output directory, created dynamically by hydra
   # path generation pattern is specified in `configs/hydra/default.yaml`
   # use it to store all files generated during the run, like ckpts and metrics
@@ -31,6 +45,9 @@ paths:
 
   # path to working directory
   work_dir: ${hydra:runtime.cwd}
+
+  # checkpoint directory
+  checkpoints_dir: ${paths.output_dir}/checkpoints/
 
 # external libraries in "src/libs" added to path for import
 libs:
