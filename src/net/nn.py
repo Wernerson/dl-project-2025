@@ -52,6 +52,10 @@ class Octuple(nn.Module):
         return z
 
     @staticmethod
+    def encode_mask(m: torch.Tensor) -> torch.Tensor:
+        return m.unsqueeze(-1).expand(m.shape[0], m.shape[1], m.shape[2], 129)
+
+    @staticmethod
     def decode(z: torch.Tensor) -> torch.Tensor:
         """
         Decodes a one-hot encoded (same as Octuple layer) tensor into OctupleMIDI format (just number).
