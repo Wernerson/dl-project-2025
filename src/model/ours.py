@@ -41,12 +41,12 @@ class OurModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss = self._sample_forward_loss(batch["input_ids"])
-        self.log("train/loss", loss)
+        self.log("train/loss", loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss = self._sample_forward_loss(batch["input_ids"])
-        self.log("val/loss", loss)
+        self.log("val/loss", loss, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
