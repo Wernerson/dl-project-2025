@@ -27,7 +27,6 @@ trainer:
       log_momentum: true
     - _target_: lightning.pytorch.callbacks.BatchSizeFinder
     - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor
-    - _target_: lightning.pytorch.callbacks.ModelSummary
 
 paths:
   # path to root directory
