@@ -45,7 +45,12 @@ def main(cfg):
     dataset = instantiate(cfg.dataset)
     model = instantiate(cfg.model)
     trainer = instantiate(cfg.trainer, logger=logger)
+
+    print("\nTraining...")
     trainer.fit(model, datamodule=dataset)
+
+    print("\nTesting...")
+    trainer.test(model, datamodule=dataset, ckpt_path="best")
 
     print("Generating some samples (hopefully)...")
     # for some reason trainer.predict is bugged, we iterate manually...
@@ -54,6 +59,7 @@ def main(cfg):
         trainer.predict(model, dataloaders=[1, 2, 3])[0]  # use this if not
         for _ in range(5)
     ]
+    print(predictions)
     tokenizer = instantiate(cfg.dataset.tokenizer)
     sample_rate = 44100
     audios = to_audio(tokenizer, predictions, sample_rate)
