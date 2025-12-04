@@ -4,6 +4,7 @@
 trainer:
   max_epochs: 1
   fast_dev_run: true
+  callbacks: # no callbacks in local runs
 logger:
   offline: true
   log_model: false
