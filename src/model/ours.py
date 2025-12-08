@@ -35,10 +35,11 @@ class OurModel(L.LightningModule):
         x_0_hat = self(x_t.float())
 
         # loss
-        m = ~Octuple.encode_mask(m)  # adjust loss
-        y = x_0.clone()
         padding = x_0 == 0
-        y[padding] = 1  # don't care about padding
+        m = ~padding & ~m  # only care about masked & non-padded
+        m = Octuple.encode_mask(m)  # adjust loss
+        y = x_0.clone()
+        y[padding] = 1  # don't care about padding, but need a valid value
         y = Octuple.encode(y).float()
         loss = self.criterion(m * x_0_hat, m * y)
         return loss
@@ -66,6 +67,7 @@ class OurModel(L.LightningModule):
         for t in reversed(range(T)):
             m = self.mask(x_t, t)
             x_t = m * Octuple.decode(self(x_t.float()))
+        x_t = Octuple.decode(self(x_t.float()))
         return x_t
 
     def configure_optimizers(self):
