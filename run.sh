@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=00:59
+#SBATCH --time=59
 #SBATCH --account=deep_learning
 if [ -z "$1" ]; then
     echo "You must pass an experiment, e.g. 'miditok'"
