@@ -50,7 +50,7 @@ def main(cfg):
     trainer.fit(model, datamodule=dataset)
 
     print("\nTesting...")
-    trainer.test(model, datamodule=dataset, ckpt_path="best")
+    trainer.test(model, datamodule=dataset)
 
     print("Generating some samples (hopefully)...")
     # for some reason trainer.predict is bugged, we iterate manually...

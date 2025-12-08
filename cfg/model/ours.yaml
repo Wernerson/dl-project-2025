@@ -6,27 +6,13 @@ optimizer:
   lr: 0.0005
 
 net:
-  _target_: torch.nn.Sequential
-  _args_:
-    - _target_: torch.nn.Linear # upscale to embedding space
-      in_features: 4
-      out_features: 256
-    - _target_: torch.nn.ReLU
-    - _target_: torch.nn.TransformerEncoder # transform
-      encoder_layer:
-        _target_: torch.nn.TransformerEncoderLayer
-        d_model: 256
-        nhead: 4
-        batch_first: true
-      num_layers: 6
-    - _target_: torch.nn.Linear # downscale
-      in_features: 256
-      out_features: 512 # 4 * 128
-    - _target_: torch.nn.ReLU
-    - _target_: net.nn.Octuple # format output
-    - _target_: torch.nn.Softmax
-      dim: -1
+  _target_: net.transformer.OneHot
+  in_dim: 4
+  hidden_dim: 256
+  out_dim: 128
+  num_heads: 4
+  transformer_layers: 6
 
 criterion:
-  _target_: torch.nn.functional.cross_entropy
+  _target_: net.transformer.OneHot.loss
   _partial_: true

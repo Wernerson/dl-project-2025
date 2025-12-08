@@ -2,7 +2,6 @@ import random
 
 import lightning as L
 import torch
-from net.nn import Octuple
 
 
 class OurModel(L.LightningModule):
@@ -17,31 +16,25 @@ class OurModel(L.LightningModule):
         return self.net(x)
 
     def mask(self, x_0, t):
-        batch_size, seq_len, dim = x_0.shape
-        T = seq_len * dim
-        p = torch.randperm(T, device=self.device).reshape(seq_len, dim)
-        return (p > t).expand(batch_size, -1, -1)
+        _, seq_len, _ = x_0.shape
+        p = torch.randperm(seq_len, device=self.device)
+        return p < t
 
     def _sample_forward_loss(self, x_0):
         # sample time stamp in denoising process
-        T = x_0.shape[1] * x_0.shape[2]
-        t = random.randint(0, T)
+        batch_size, seq_len, dim = x_0.shape
+        t = random.randint(1, seq_len)
 
-        # noise / mask the sample
-        m = self.mask(x_0, t)
-        x_t = m * x_0
+        # mask the sample & create padding mask
+        padding = x_0[:, :, 0] == 0
+        mask = self.mask(x_0, t)
+        x_t = (~mask).unsqueeze(1).expand(-1, 4) * x_0
 
         # denoise / unmask the sample
-        x_0_hat = self(x_t.float())
+        x_0_hat = self.net(x_t, mask, padding)
 
         # loss
-        padding = x_0 == 0
-        m = ~padding & ~m  # only care about masked & non-padded
-        m = Octuple.encode_mask(m)  # adjust loss
-        y = x_0.clone()
-        y[padding] = 1  # don't care about padding, but need a valid value
-        y = Octuple.encode(y).float()
-        loss = self.criterion(m * x_0_hat, m * y)
+        loss = self.criterion(x_0, x_0_hat, mask, padding)
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -62,12 +55,10 @@ class OurModel(L.LightningModule):
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         # input is currently irrelevant
         n = random.randint(10, 20)
-        T = 4 * n
         x_t = torch.zeros((1, n, 4), device=self.device)
-        for t in reversed(range(T)):
-            m = self.mask(x_t, t)
-            x_t = m * Octuple.decode(self(x_t.float()))
-        x_t = Octuple.decode(self(x_t.float()))
+        for t in reversed(range(n)):
+            mask = self.mask(x_t, t)
+            x_t = self.net.predict(x_t, mask)
         return x_t
 
     def configure_optimizers(self):
