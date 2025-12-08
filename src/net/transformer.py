@@ -1,5 +1,19 @@
+import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+def sinusoidal_encodings(seq_len, dim, device):
+    N = 10000
+    i = torch.arange(0, dim // 2, device=device)
+    div_term = torch.exp(-np.log(N) * (2 * i / dim))
+    position = torch.arange(seq_len, device=device).unsqueeze(1)
+
+    pe = torch.zeros(seq_len, dim, device=device)
+    pe[:, 0::2] = torch.sin(position * div_term)
+    pe[:, 1::2] = torch.cos(position * div_term)
+    return pe
 
 
 class OneHot(nn.Module):
@@ -28,12 +42,14 @@ class OneHot(nn.Module):
         )
 
     def forward(self, x, mask, padding=None):
+        batch_len, seq_len, dim = x.shape
         x = x.float()
+        x += sinusoidal_encodings(seq_len, dim, x.device)
         x = self.input(x)
         mask = mask.unsqueeze(0) | mask.unsqueeze(1)
         x = self.transformer(x, mask=mask, src_key_padding_mask=padding)
         x = self.output(x)
-        x = x.reshape(x.shape[0], x.shape[1], self.in_dim, self.out_dim)
+        x = x.reshape(batch_len, seq_len, self.in_dim, self.out_dim)
         x = F.softmax(x, dim=-1)
         return x
 
