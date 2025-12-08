@@ -36,7 +36,11 @@ class OurModel(L.LightningModule):
 
         # loss
         m = ~Octuple.encode_mask(m)  # adjust loss
-        loss = self.criterion(m * x_0_hat, m * Octuple.encode(x_0).float())
+        y = x_0.clone()
+        padding = x_0 == 0
+        y[padding] = 1  # don't care about padding
+        y = Octuple.encode(y).float()
+        loss = self.criterion(m * x_0_hat, m * y)
         return loss
 
     def training_step(self, batch, batch_idx):

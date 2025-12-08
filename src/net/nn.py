@@ -35,7 +35,7 @@ class Octuple(nn.Module):
         # self.mask[:, Octuple.Tim, 254:] = True  # Time Signature
 
     def forward(self, x):
-        x = x.reshape(x.shape[0], x.shape[1], 4, 129)
+        x = x.reshape(x.shape[0], x.shape[1], 4, 128)
         # mask = self.mask.to(x.device)
         # x = x.masked_fill(mask, float("-inf"))
         return x
@@ -48,12 +48,12 @@ class Octuple(nn.Module):
         :param x: the tensor to be encoded, must be OctupleMIDI format (last dim=8).
         :return: One-hot encoded tensor, same as Octuple layer output (last dim=256).
         """
-        z = F.one_hot(x, 129)
+        z = F.one_hot(x - 1, 128)
         return z
 
     @staticmethod
     def encode_mask(m: torch.Tensor) -> torch.Tensor:
-        return m.unsqueeze(-1).expand(m.shape[0], m.shape[1], m.shape[2], 129)
+        return m.unsqueeze(-1).expand(-1, -1, -1, 128)
 
     @staticmethod
     def decode(z: torch.Tensor) -> torch.Tensor:
@@ -63,7 +63,7 @@ class Octuple(nn.Module):
         :return: OctupleMIDI formatted tensor (just numbers, last dim=8).
         """
         x = z.argmax(dim=-1)
-        return x
+        return x + 1
 
 
 if __name__ == "__main__":
@@ -78,7 +78,7 @@ if __name__ == "__main__":
                 d_model=256, nhead=4, batch_first=True
             ), num_layers=6
         ),
-        nn.Linear(256, 516),
+        nn.Linear(256, 512),
         nn.ReLU(),
         Octuple(),
         nn.Softmax(dim=-1)

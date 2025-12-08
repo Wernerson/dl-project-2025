@@ -21,7 +21,7 @@ net:
       num_layers: 6
     - _target_: torch.nn.Linear # downscale
       in_features: 256
-      out_features: 516 # 4 * 129
+      out_features: 512 # 4 * 128
     - _target_: torch.nn.ReLU
     - _target_: net.nn.Octuple # format output
     - _target_: torch.nn.Softmax
