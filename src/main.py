@@ -4,6 +4,7 @@ from pathlib import Path
 import hydra
 import lightning as L
 import numpy as np
+import torch
 from hydra.utils import instantiate
 from symusic import Synthesizer, BuiltInSF3
 
@@ -30,6 +31,12 @@ def to_audio(tokenizer, predictions, sample_rate):
         audios.append(audio)
     return audios
 
+
+def filter_duplicates(x):
+    bar_pos = x[:, :, 1:3]
+    _, idx = torch.unique(bar_pos, dim=0, return_inverse=True)
+    idx = torch.unique(idx)
+    return x[:, idx]
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
