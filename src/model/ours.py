@@ -27,8 +27,7 @@ class OurModel(L.LightningModule):
         padding = x_0[:, :, 0] == 0
 
         # sample valid timestep t
-        T = min(seq_len, (~padding).sum(dim=-1).min().item()) - 1
-        t = random.randint(1, T)
+        t = random.randint(1, seq_len)
 
         # mask the sample
         mask = self.mask(x_0, t)
