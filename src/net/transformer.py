@@ -20,10 +20,11 @@ class OneHot(nn.Module):
     def __init__(self, in_dim, hidden_dim, out_dim, num_heads, transformer_layers):
         super(OneHot, self).__init__()
         self.in_dim = in_dim
+        self.hidden_dim = hidden_dim
         self.out_dim = out_dim
 
         self.input = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim),
+            nn.Linear(1, hidden_dim),
             nn.ReLU()
         )
 
@@ -37,33 +38,40 @@ class OneHot(nn.Module):
         )
 
         self.output = nn.Sequential(
-            nn.Linear(hidden_dim, in_dim * out_dim),
+            nn.Linear(hidden_dim, out_dim),
             nn.ReLU()
         )
 
     def forward(self, x, padding=None):
         batch_len, seq_len, dim = x.shape
+        x = x.reshape(batch_len, seq_len * self.in_dim, 1)
         x = x.float()
-        x += sinusoidal_encodings(seq_len, dim, x.device)
         x = self.input(x)
+        x = x + sinusoidal_encodings(seq_len * self.in_dim, self.hidden_dim, x.device)
+        if padding is not None:
+            padding = padding.repeat_interleave(self.in_dim, dim=-1)
         x = self.transformer(x, src_key_padding_mask=padding)
         x = self.output(x)
-        x = x.reshape(batch_len, seq_len, self.in_dim, self.out_dim)
+        x = x.reshape(batch_len, seq_len * self.in_dim, self.out_dim)
         x = F.softmax(x, dim=-1)
         return x
 
     @staticmethod
     def loss(x_0, x_0_hat, mask, padding):
-        _, _, _, dim = x_0_hat.shape
+        batch_len, seq_len, dim = x_0_hat.shape
         mask = mask & ~padding
         y = x_0.clone()
         y[~padding] -= 1
+        y = y.reshape(batch_len, seq_len)
         y = F.one_hot(y, dim)
         loss = (y - x_0_hat) ** 2
-        loss = loss.mean(dim=-1)  # [N, L], mean loss category
-        return (mask.unsqueeze(-1) * loss).sum() / mask.sum()
+        loss = loss.mean(dim=-1)
+        mask = mask.repeat_interleave(4, dim=-1)
+        return (mask * loss).sum() / mask.sum()
 
     def predict(self, x_t):
+        batch_len, seq_len, dim = x_t.shape
         x = self.forward(x_t)
         x = x.argmax(dim=-1) + 1
+        x = x.reshape(batch_len, -1, self.in_dim)
         return x
