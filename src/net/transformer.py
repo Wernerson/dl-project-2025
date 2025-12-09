@@ -63,11 +63,14 @@ class OneHot(nn.Module):
         y = x_0.clone()
         y[~padding] -= 1
         y = y.reshape(batch_len, seq_len)
-        y = F.one_hot(y, dim)
-        loss = (y - x_0_hat) ** 2
-        loss = loss.mean(dim=-1)
+        y = F.one_hot(y, dim).float()
         mask = mask.repeat_interleave(4, dim=-1)
-        return (mask * loss).sum() / mask.sum()
+        x = x_0_hat[mask]
+        y = y[mask]
+        loss = 0.
+        for xi, yi in zip(x, y):
+            loss = loss + F.cross_entropy(xi, yi)
+        return loss
 
     def predict(self, x_t):
         batch_len, seq_len, dim = x_t.shape
