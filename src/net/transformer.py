@@ -41,13 +41,12 @@ class OneHot(nn.Module):
             nn.ReLU()
         )
 
-    def forward(self, x, mask, padding=None):
+    def forward(self, x, padding=None):
         batch_len, seq_len, dim = x.shape
         x = x.float()
         x += sinusoidal_encodings(seq_len, dim, x.device)
         x = self.input(x)
-        mask = mask.unsqueeze(0) | mask.unsqueeze(1)
-        x = self.transformer(x, mask=mask, src_key_padding_mask=padding)
+        x = self.transformer(x, src_key_padding_mask=padding)
         x = self.output(x)
         x = x.reshape(batch_len, seq_len, self.in_dim, self.out_dim)
         x = F.softmax(x, dim=-1)
@@ -64,7 +63,7 @@ class OneHot(nn.Module):
         loss = loss.mean(dim=-1)  # [N, L], mean loss category
         return (mask.unsqueeze(-1) * loss).sum() / mask.sum()
 
-    def predict(self, x_t, mask):
-        x = self.forward(x_t, mask)
+    def predict(self, x_t):
+        x = self.forward(x_t)
         x = x.argmax(dim=-1) + 1
-        return (~mask).unsqueeze(-1) * x
+        return x

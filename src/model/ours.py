@@ -23,15 +23,19 @@ class OurModel(L.LightningModule):
     def _sample_forward_loss(self, x_0):
         # sample time stamp in denoising process
         batch_size, seq_len, dim = x_0.shape
-        t = random.randint(1, seq_len)
-
-        # mask the sample & create padding mask
+        # create padding mask
         padding = x_0[:, :, 0] == 0
+
+        # sample valid timestep t
+        T = min(seq_len, (~padding).sum(dim=-1).min().item()) - 1
+        t = random.randint(1, T)
+
+        # mask the sample
         mask = self.mask(x_0, t)
         x_t = (~mask).unsqueeze(1).expand(-1, 4) * x_0
 
         # denoise / unmask the sample
-        x_0_hat = self.net(x_t, mask, padding)
+        x_0_hat = self.net(x_t, padding)
 
         # loss
         loss = self.criterion(x_0, x_0_hat, mask, padding)
@@ -58,7 +62,8 @@ class OurModel(L.LightningModule):
         x_t = torch.zeros((1, n, 4), device=self.device)
         for t in reversed(range(n)):
             mask = self.mask(x_t, t)
-            x_t = self.net.predict(x_t, mask)
+            x_t = (~mask).unsqueeze(1).expand(-1, 4) * self.net.predict(x_t)
+        x_t = self.net.predict(x_t)
         return x_t
 
     def configure_optimizers(self):
