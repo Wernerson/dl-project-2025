@@ -65,6 +65,8 @@ class OneHot(nn.Module):
         y = y.reshape(batch_len, seq_len)
         y = F.one_hot(y, dim).float()
         mask = mask.repeat_interleave(4, dim=-1)
+        if ~mask.any():
+            return 0.  # useful was masked
         x = x_0_hat[mask]
         y = y[mask]
         loss = 0.
