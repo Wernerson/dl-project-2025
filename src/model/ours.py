@@ -29,7 +29,7 @@ class OurModel(L.LightningModule):
         # sample valid timestep t
         t = random.randint(1, seq_len)
 
-        # mask the sample
+        # mask the sample  #TODO: change the masking? give mask to forward directly so that it can be used for tokenization, alternatively move tokenization here but compatibility issues
         mask = self.mask(x_0, t)
         x_t = (~mask).unsqueeze(1).expand(-1, 4) * x_0
 
