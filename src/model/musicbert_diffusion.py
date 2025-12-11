@@ -14,10 +14,61 @@ class MusicBertDiffusion(L.LightningModule):
         
         self.mask_token_id = net.output_head.out_features - 1 
 
+
+        # --- 1. Create the Constraint Mask in Init ---
+        vocab_size = net.output_head.out_features
+        
+        # Start with everything invalid (-inf)
+        mask = torch.full((len(offsets), vocab_size), float('-inf'))
+        
+        # Open up the valid ranges
+        bounds = offsets + [self.mask_token_id] 
+        for i in range(len(offsets)):
+            # Set valid range to 0.0
+            mask[i, bounds[i]:bounds[i+1]] = 0.0
+            
+        # Register as buffer (handles device movement automatically)
+        self.register_buffer('constraint_mask', mask)
+
+
+    def compute_logits(self, x_flat, apply_constraints=False):
+        """
+        Shared logic for Training and Inference.
+        Applies Network -> Reshape -> Constraints.
+        Args:
+            x_flat: [Batch, Seq*8] (Global Indices)
+        Returns:
+            logits: [Batch, Seq, 8, Vocab] (Constrained)
+        """
+        # 1. Network Pass
+        logits = self.net(x_flat) 
+        
+        # 2. Reshape to [Batch, Seq, 8, Vocab]
+        # (Handling the case where MusicBERT returns flat [B, S*8, V])
+        if logits.dim() == 3:
+            batch_size = logits.size(0)
+            logits = logits.view(batch_size, -1, len(self.offsets), logits.size(-1))
+            
+        # 3. Apply Constraints (Conditional)
+        if apply_constraints:
+            logits = logits + self.constraint_mask.unsqueeze(0).unsqueeze(0)
+        
+        return logits
+    
+
     def forward(self, x_structured):
+        """
+        User Interface: Accepts Raw MIDI (0-127).
+        """
+        # 1. Apply Offsets
         x_offset = x_structured + self.offsets
+        
+        # 2. Flatten
         x_flat = x_offset.view(x_structured.size(0), -1)
-        return self.net(x_flat)
+        
+        # 3. Compute (Net + Constraints)
+        return self.compute_logits(x_flat, apply_constraints=False)
+    
 
     def _sample_forward_loss(self, x_0):
         batch_size, seq_len, num_attribs = x_0.shape
@@ -40,11 +91,7 @@ class MusicBertDiffusion(L.LightningModule):
                                torch.tensor(self.mask_token_id, device=self.device), 
                                x_offset).view(batch_size, -1)
 
-        # 3. Pass to Net
-        logits = self.net(x_t_flat) 
-
-        # 4. Reshape Logits
-        logits = logits.view(batch_size, seq_len, num_attribs, -1)
+        logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
         # 5. Loss
         target = x_offset
@@ -73,40 +120,61 @@ class MusicBertDiffusion(L.LightningModule):
         loss = self._sample_forward_loss(x)
         self.log("test/loss", loss, prog_bar=True)
         return loss
+    
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         n_notes = 128 
-        tokens_per_note = self.offsets.shape[0] # Should be 8
+        tokens_per_note = self.offsets.shape[0] # 8
+        
+        # Sampling Hyperparameters
+        top_k = 50       # Restrict to top 50 choices (prevents weird bad notes)
+        temperature = 1.0 # 1.0 = standard, >1.0 = chaotic, <1.0 = conservative
         
         # 1. Start: All Masked
         x_t = torch.full((1, n_notes, tokens_per_note), self.mask_token_id, 
                          device=self.device, dtype=torch.long)
         
-        # 2. Generate Random Order
-        # We create a random permutation of indices [0, 1, ... 127]
-        # This defines the "Random Path" we will take to generate the song.
-        # This guarantees we visit every note exactly once without repeating.
+        # 2. Random Permutation
         random_order = torch.randperm(n_notes, device=self.device)
         
         # 3. Iterative Unmasking
         for step in range(n_notes):
-            # Get the index of the single note we want to reveal this step
             target_idx = random_order[step]
             
-            # A. Predict
-            # The model sees the current state (partially filled, partially masked)
-            logits = self.net(x_t.view(1, -1)) 
-            logits = logits.view(1, n_notes, tokens_per_note, -1)
+            # A. Network Prediction
+            logits = self.compute_logits(x_t.view(1, -1), apply_constraints=True)
             
-            # B. Greedy Selection (Argmax)
-            predictions = torch.argmax(logits, dim=-1) # [1, N, 8]
+            # Focus on the specific note we are updating
+            # Shape: [1, 1, 8, Vocab]
+            note_logits = logits[:, target_idx, :, :].unsqueeze(1)
+
+
+            # 1. Apply Temperature
+            # Higher T makes distribution flatter (more random)
+            note_logits = note_logits / temperature
             
-            # C. Update ONLY the specific note we selected
-            # We copy the predicted values for 'target_idx' into x_t
-            x_t[0, target_idx, :] = predictions[0, target_idx, :]
+            # 2. Top-K Filtering
+            # We filter independently for each of the 8 attributes
+            # Get top k values
+            v, i = torch.topk(note_logits, top_k)
             
-        # 4. Finish
-        # Remove offsets to return to MIDI values (0-127)
+            # Create a mask of -inf for everything NOT in the top k
+            # (Everything smaller than the k-th best value becomes -inf)
+            min_values = v[:, :, :, -1].unsqueeze(-1).expand_as(note_logits)
+            note_logits = torch.where(note_logits < min_values, 
+                                      torch.tensor(float('-inf'), device=self.device), 
+                                      note_logits)
+
+            # 3. Sample from the filtered distribution
+            probs = F.softmax(note_logits, dim=-1)
+            
+            # We flatten to 2D [8, Vocab] to use multinomial, then reshape back
+            # Result: [1, 1, 8] containing the chosen token IDs
+            sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(1, 1, tokens_per_note)
+                        
+            # B. Update
+            x_t[0, target_idx, :] = sampled_ids[0, 0, :]
+            
         return torch.relu(x_t - self.offsets)
     
     
