@@ -1,48 +1,28 @@
-#import torch.nn as nn
-#
-#
-#class MusicBERT(nn.Module):
-#
-#    def __init__(self, input_size, lin1_size, lin2_size, lin3_size, output_size):
-#        super(MusicBERT, self).__init__()
-#        self.model = nn.Sequential(
-#            nn.Linear(input_size, lin1_size),
-#            nn.ReLU(),
-#            nn.Linear(lin1_size, lin2_size),
-#            nn.ReLU(),
-#            nn.Linear(lin2_size, lin3_size),
-#            nn.ReLU(),
-#            nn.Linear(lin3_size, output_size),
-#        )
-#
-#    def forward(self, x):
-#        return self.model(x)
-
-
 import torch
 import torch.nn as nn
-from transformers import BertConfig, BertEncoder  # Standard HF modules (or simple PyTorch ones)
-
 
 class MusicBERT(nn.Module):
     def __init__(self,
-                 vocab_size=2048, #TODO: check correct vocab size to allow for mask tokens and everything else potentially necessary
+                 vocab_size=2048, 
                  hidden_dim=768,
                  num_layers=12,
                  num_heads=12,
-                 max_seq_len=1024, #TODO: probably signifficantly smaller for now, is that an issue
+                 max_seq_len=1024,
+                 tokens_per_note=8
                  ): 
                 
         super().__init__()
+
+        self.num_tokens_per_note = tokens_per_note
 
         # 1. The Embeddings (The "CP" Layer)
         # We share one embedding layer for all domains (using offsets)
         self.embedding = nn.Embedding(vocab_size, hidden_dim)
 
-        # CP Downsampling: 8 tokens -> 1 vector
-        # Input: [Batch, SeqLen*8, Dim] -> Concat 8 -> [Batch, SeqLen, Dim*8]
-        # Linear: [Dim*8] -> [Dim]
-        self.downsample = nn.Linear(hidden_dim * 8, hidden_dim)
+        # CP Downsampling: tokens_per_note tokens -> 1 vector
+        # Input: [Batch, SeqLen*tokens_per_note, Dim] -> Concat tokens_per_note -> [Batch, SeqLen, Dim*tokens_per_note]
+        # Linear: [Dim*tokens_per_note] -> [Dim]
+        self.downsample = nn.Linear(hidden_dim * self.num_tokens_per_note, hidden_dim)
 
         # 2. The Transformer Backbone
         # You can use standard PyTorch TransformerEncoder or HF BertEncoder
@@ -64,25 +44,25 @@ class MusicBERT(nn.Module):
         self.dropout = nn.Dropout(0.1)
 
         # 3. The Output Heads (Upsampling)
-        # Linear: [Dim] -> [Dim*8]
-        self.upsample = nn.Linear(hidden_dim, hidden_dim * 8)
+        # Linear: [Dim] -> [Dim*tokens_per_note]
+        self.upsample = nn.Linear(hidden_dim, hidden_dim * self.num_tokens_per_note)
 
         # Prediction Head: [Dim] -> [VocabSize]
         self.output_head = nn.Linear(hidden_dim, vocab_size)
 
     def forward(self, x):
         """
-        x: [Batch, SeqLen * 8] (Flattened & Offset Indices)
+        x: [Batch, SeqLen * tokens_per_note] (Flattened & Offset Indices)
         """
         batch_size, flat_len = x.shape
-        seq_len = flat_len // 8
+        seq_len = flat_len // self.num_tokens_per_note
 
         # --- A. Embedding & Grouping ---
         # 1. Embed individual tokens
-        x_emb = self.embedding(x)  # [Batch, SeqLen*8, Dim]
+        x_emb = self.embedding(x)  # [Batch, SeqLen*tokens_per_note, Dim]
 
         # 2. Group into notes (CP Logic)
-        # View as [Batch, SeqLen, 8, Dim] -> Flatten last 2 dims -> [Batch, SeqLen, 8*Dim]
+        # View as [Batch, SeqLen, tokens_per_note, Dim] -> Flatten last 2 dims -> [Batch, SeqLen, tokens_per_note*Dim]
         x_grouped = x_emb.view(batch_size, seq_len, -1)
 
         # 3. Downsample to single vector per note
@@ -99,74 +79,20 @@ class MusicBERT(nn.Module):
         x_tfm = self.transformer(x_down)
 
         # --- D. Upsampling & Prediction ---
-        # 1. Expand back to 8 vectors per note
-        # [Batch, SeqLen, Dim] -> [Batch, SeqLen, 8*Dim]
+        # 1. Expand back to tokens_per_note vectors per note
+        # [Batch, SeqLen, Dim] -> [Batch, SeqLen, tokens_per_note*Dim]
         x_up = self.upsample(x_tfm)
 
         # 2. Reshape to flattened sequence again for prediction
-        # [Batch, SeqLen, 8*Dim] -> [Batch, SeqLen, 8, Dim] -> [Batch, SeqLen*8, Dim]
-        x_up_seq = x_up.view(batch_size, seq_len, 8, -1).view(batch_size, flat_len, -1)
+        # [Batch, SeqLen, tokens_per_note*Dim] -> [Batch, SeqLen, tokens_per_note, Dim] -> [Batch, SeqLen*tokens_per_note, Dim]
+        x_up_seq = x_up.view(batch_size, seq_len, self.num_tokens_per_note, -1).view(batch_size, flat_len, -1)
 
         # 3. Project to Vocab
-        logits = self.output_head(x_up_seq)  # [Batch, SeqLen*8, Vocab]
-
-        # 4. (Optional) Reshape to structured if you prefer
-        # return logits.view(batch_size, seq_len, 8, -1)
+        logits = self.output_head(x_up_seq)  # [Batch, SeqLen*tokens_per_note, Vocab]
 
         return logits
 
-    @staticmethod
-    def loss(x_0, x_0_hat, mask, padding):
-        """
-        batch_len, seq_len, dim = x_0_hat.shape
-        mask = mask & ~padding
-        y = x_0.clone()
-        y[~padding] -= 1
-        y = y.reshape(batch_len, seq_len)
-        y = F.one_hot(y, dim).float()
-        mask = mask.repeat_interleave(4, dim=-1)
-        if ~mask.any():
-            return 0.  # useful was masked
-        x = x_0_hat[mask]
-        y = y[mask]
-        loss = 0.
-        for xi, yi in zip(x, y):
-            loss = loss + F.cross_entropy(xi, yi)
-        return loss
-        """
 
-        # compare x_0 and x_0_hat only on the positions where we have a mask token
 
-    def predict(self, x_t):
-        """
-        batch_len, seq_len, dim = x_t.shape
-        x = self.forward(x_t)
-        x = x.argmax(dim=-1) + 1
-        x = x.reshape(batch_len, -1, self.in_dim)
-        return x
-        """
 
-        # transform input to tokens
-        # call forward to get the sequence of logits
 
-        # mask out invalid tokens / set the logits to -inf
-
-        # perform argmax over the sequence of logits to get tokens
-        # call TokensToOctupleMidi(x_t_hat) with the predictions
-        # return correctly formated octuple Midi
-
-        pass
-
-    def OctupleMidiToTokens(x_t, mask):
-        # transform to scalar sequence
-        # add domain offset
-        # mask token ?
-
-        pass
-
-    def TokensToOctupleMidi(x_t_hat):
-        # input is a sequence of tokens from full vocabulary
-        # transform back to full vector sequence
-        # maybe perform checks if valid here
-
-        pass

@@ -2,6 +2,7 @@ defaults:
   - model: midi
   - dataset: lakh-midi
   - logger: wandb
+  - _self_
 
 experiment_name: base
 seed: 42

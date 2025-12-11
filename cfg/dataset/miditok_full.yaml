@@ -1,0 +1,19 @@
+defaults:
+  - lakh-MIDI
+
+_target_: dataset.miditok.MIDITok
+batch_size: 1024
+max_seq_len: 64
+num_workers: 4
+
+
+tokenizer:
+  _target_: miditok.Octuple
+  _args_:
+    - _target_: miditok.TokenizerConfig
+      use_programs: True
+      use_velocities: True
+      use_tempos: True
+      use_time_signatures: True
+      use_pitchdrum_tokens: False 
+      max_bar_embedding: 128

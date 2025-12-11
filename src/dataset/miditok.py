@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, random_split
 
 
 class MIDITok(L.LightningDataModule):
-    def __init__(self, data_dir: str, download_url: str, batch_size: int, splits, max_seq_len, tokenizer):
+    def __init__(self, data_dir: str, download_url: str, batch_size: int, splits, max_seq_len, tokenizer, num_workers=0):
         super(MIDITok, self).__init__()
         self.data_dir = os.path.join(data_dir, "MIDITok")
         self.raw_dir = os.path.join(self.data_dir, "raw")
@@ -20,6 +20,8 @@ class MIDITok(L.LightningDataModule):
         self.splits = splits
         self.max_seq_len = max_seq_len
         self.tokenizer = tokenizer
+
+        self.num_workers = num_workers
 
         self.train_set = None
         self.test_set = None
@@ -79,7 +81,7 @@ class MIDITok(L.LightningDataModule):
 
     def train_dataloader(self):
         collator = DataCollator(self.tokenizer.pad_token_id)
-        return DataLoader(self.train_set, batch_size=self.batch_size, collate_fn=collator)
+        return DataLoader(self.train_set, batch_size=self.batch_size, collate_fn=collator, num_workers=self.num_workers)
 
     def val_dataloader(self):
         collator = DataCollator(self.tokenizer.pad_token_id)
