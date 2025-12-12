@@ -1,6 +1,8 @@
 #!/bin/bash
-#SBATCH --time=59
+#SBATCH --time=360
 #SBATCH --account=deep_learning
+#SBATCH --gpus 5060ti:1
+#SBATCH --mem=24G
 if [ -z "$1" ]; then
     echo "You must pass an experiment, e.g. 'miditok'"
     exit 1

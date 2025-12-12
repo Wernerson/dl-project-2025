@@ -1,8 +1,6 @@
 # @package _global_
 # overrides for a cluster run
 
-user: ${oc.env:USER}
-
 paths:
   # override data storage paths
-  data_dir: /work/scratch/${user}/dl-2025/data
+  data_dir: ${oc.env:TMPDIR}/data
