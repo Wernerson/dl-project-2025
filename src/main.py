@@ -18,7 +18,7 @@ def to_audio(tokenizer, predictions, sample_rate):
     audios = []
     for pred in predictions:
         try:
-            midi = tokenizer(pred.unsqueeze(0))
+            midi = tokenizer.decode(pred[0].cpu().numpy())
         except:
             print("Failed to generate midi.")
             continue
