@@ -50,7 +50,7 @@ class MusicBERT(nn.Module):
         # Prediction Head: [Dim] -> [VocabSize]
         self.output_head = nn.Linear(hidden_dim, vocab_size)
 
-    def forward(self, x):
+    def forward(self, x, padding_mask=None):
         """
         x: [Batch, SeqLen * tokens_per_note] (Flattened & Offset Indices)
         """
@@ -76,7 +76,7 @@ class MusicBERT(nn.Module):
 
         # --- C. Transformer Processing ---
         # [Batch, SeqLen, Dim]
-        x_tfm = self.transformer(x_down)
+        x_tfm = self.transformer(x_down, src_key_padding_mask=padding_mask)
 
         # --- D. Upsampling & Prediction ---
         # 1. Expand back to tokens_per_note vectors per note

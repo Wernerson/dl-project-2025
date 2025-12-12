@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 import lightning as L
 
+
 class MusicBertDiffusion(L.LightningModule):
     def __init__(self, net, optimizer, offsets):
         super().__init__()
@@ -14,6 +15,8 @@ class MusicBertDiffusion(L.LightningModule):
         
         self.mask_token_id = net.output_head.out_features - 1 
 
+        # Global Special IDs (0=BOS, 1=PAD, 2=EOS, 3=UNK)
+        self.pad_token_id = 1
 
         # --- 1. Create the Constraint Mask in Init ---
         vocab_size = net.output_head.out_features
@@ -29,6 +32,8 @@ class MusicBertDiffusion(L.LightningModule):
             
         # Register as buffer (handles device movement automatically)
         self.register_buffer('constraint_mask', mask)
+
+        self.tokens_per_note = self.offsets.shape[0]
 
 
     def compute_logits(self, x_flat, apply_constraints=False):
@@ -60,18 +65,34 @@ class MusicBertDiffusion(L.LightningModule):
         """
         User Interface: Accepts Raw MIDI (0-127).
         """
+
+        # 0. Detect Padding Rows (Where ALL attributes are 0)
+        # Shape: [Batch, Seq]
+        is_padding = (x_structured == 0).all(dim=-1)
+
         # 1. Apply Offsets
         x_offset = x_structured + self.offsets
         
         # 2. Flatten
         x_flat = x_offset.view(x_structured.size(0), -1)
+
+        # Expand is_padding to match flattened shape: [Batch, Seq] -> [Batch, Seq*tokens_per_note]
+        is_padding_flat = is_padding.unsqueeze(-1).expand(-1, -1, self.tokens_per_note).reshape(x_structured.size(0), -1)
+        
+        # Override: Where padding is True, set to PAD_ID
+        x_flat = torch.where(is_padding_flat, 
+                             torch.tensor(self.pad_token_id, device=self.device), 
+                             x_flat)
         
         # 3. Compute (Net + Constraints)
-        return self.compute_logits(x_flat, apply_constraints=False)
+        return self.compute_logits(x_flat, apply_constraints=False, padding_mask=is_padding)
     
 
     def _sample_forward_loss(self, x_0):
         batch_size, seq_len, num_attribs = x_0.shape
+
+        # --- A. Detect Padding ---
+        is_padding = (x_0 == 0).all(dim=-1) # [Batch, Seq]
 
         # 1. Create Mask
         t = random.randint(1, seq_len)
@@ -84,8 +105,19 @@ class MusicBertDiffusion(L.LightningModule):
         # Expand mask: [Batch, Seq, 4]
         is_masked_batch = is_masked.unsqueeze(1).expand(-1, num_attribs).unsqueeze(0).expand(batch_size, -1, -1)
 
+        # Ensure we NEVER mask padding (Padding must stay visible as Padding)
+        is_padding_expanded = is_padding.unsqueeze(-1).expand_as(is_masked_batch)
+        is_masked_batch = is_masked_batch & (~is_padding_expanded)
+
         # 2. Apply Offsets & Masking
         x_offset = x_0 + self.offsets
+
+        # 1. Override Padding with PAD_ID (1)
+        # (Otherwise 0+offset becomes a valid note like Pitch 4)
+
+        x_offset = torch.where(is_padding_expanded, 
+                               torch.tensor(self.pad_token_id, device=self.device), 
+                               x_offset)
         
         x_t_flat = torch.where(is_masked_batch, 
                                torch.tensor(self.mask_token_id, device=self.device), 
@@ -124,14 +156,13 @@ class MusicBertDiffusion(L.LightningModule):
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         n_notes = 128 
-        tokens_per_note = self.offsets.shape[0] # 8
         
         # Sampling Hyperparameters
         top_k = 50       # Restrict to top 50 choices (prevents weird bad notes)
         temperature = 1.0 # 1.0 = standard, >1.0 = chaotic, <1.0 = conservative
         
         # 1. Start: All Masked
-        x_t = torch.full((1, n_notes, tokens_per_note), self.mask_token_id, 
+        x_t = torch.full((1, n_notes, self.tokens_per_note), self.mask_token_id, 
                          device=self.device, dtype=torch.long)
         
         # 2. Random Permutation
@@ -170,7 +201,7 @@ class MusicBertDiffusion(L.LightningModule):
             
             # We flatten to 2D [8, Vocab] to use multinomial, then reshape back
             # Result: [1, 1, 8] containing the chosen token IDs
-            sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(1, 1, tokens_per_note)
+            sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(1, 1, self.tokens_per_note)
                         
             # B. Update
             x_t[0, target_idx, :] = sampled_ids[0, 0, :]
