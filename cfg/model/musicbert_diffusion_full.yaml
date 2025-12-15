@@ -3,6 +3,9 @@ _target_: model.musicbert_diffusion.MusicBertDiffusion
 
 # In conf/model/musicbert_diffusion.yaml
 
+mask_strategy:
+  _target_: model.mask.NoteMasking
+
 optimizer:
   _target_: torch.optim.AdamW
   _partial_: true
@@ -24,7 +27,7 @@ net:
   hidden_dim: 256
   num_layers: 6
   num_heads: 8
-  max_seq_len: 512 
+  max_seq_len: 512
   
   # CRITICAL: Now processing 8 attributes per note
   tokens_per_note: 8
