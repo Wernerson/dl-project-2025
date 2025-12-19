@@ -2,8 +2,11 @@
 # overrides for local runs
 
 trainer:
-  max_epochs: 1
   fast_dev_run: true
+  max_epochs: 1
+  limit_train_batches: 9
+  limit_val_batches: 1
+  limit_test_batches: 1
 #  callbacks: # no callbacks in local runs
 logger:
   offline: true

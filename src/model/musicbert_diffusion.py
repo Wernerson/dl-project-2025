@@ -148,8 +148,7 @@ class MusicBertDiffusion(L.LightningModule):
         self.log("test/loss", loss, prog_bar=True)
         return loss
 
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        seq_len = 128
+    def sample(self, seq_len=128):
         dim = self.tokens_per_note
 
         # Sampling Hyperparameters
@@ -202,9 +201,8 @@ class MusicBertDiffusion(L.LightningModule):
         optimizer = self.optimizer(self.parameters())
         scheduler = self.lr_scheduler(
             optimizer,
-            total_steps=self.trainer.estimated_stepping_batches,
+            total_steps=self.trainer.estimated_stepping_batches
         )
-
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
