@@ -5,20 +5,6 @@ import torch
 import torch.nn.functional as F
 
 
-def note_masking(x_0, t):
-    batch_size, seq_len, dim = x_0.shape
-    t = t % seq_len
-    rand_indices = torch.randperm(seq_len, device=x_0.device)
-    mask_indices = rand_indices[:t]
-
-    is_masked = torch.zeros(seq_len, dtype=torch.bool, device=x_0.device)
-    is_masked[mask_indices] = True
-
-    # Expand mask: [Batch, Seq, num tokens per note]
-    is_masked_batch = is_masked.unsqueeze(1).expand(-1, dim).unsqueeze(0).expand(batch_size, -1, -1)
-    return is_masked_batch
-
-
 class MusicBertDiffusion(L.LightningModule):
     def __init__(self, net, optimizer, offsets, mask_strategy):
         super().__init__()
@@ -207,8 +193,7 @@ class MusicBertDiffusion(L.LightningModule):
             sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(1, seq_len, dim)
 
             # B. Update only masked entries
-            # x_t[mask] = sampled_ids[mask] # todo does this actually work? won't we forget some number by randomly masking?
-            x_t = sampled_ids
+            x_t[mask] = sampled_ids[mask]
 
         return x_t - self.offsets
 

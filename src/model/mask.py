@@ -35,9 +35,9 @@ class NoteMasking(MaskingStrategy):
         rand_indices = torch.randperm(seq_len, device=x.device)
         mask_indices = rand_indices[:t]
 
-        is_masked = torch.zeros(seq_len, dtype=torch.bool, device=x.device)
-        is_masked[mask_indices] = True
+        mask = torch.zeros(seq_len, dtype=torch.bool, device=x.device)
+        mask[mask_indices] = True
 
         # Expand mask: [Batch, Seq, num tokens per note]
-        is_masked_batch = is_masked.unsqueeze(1).expand(-1, dim).unsqueeze(0).expand(batch_size, -1, -1)
-        return is_masked_batch
+        batch_mask = mask.unsqueeze(1).expand(-1, dim).unsqueeze(0).expand(batch_size, -1, -1)
+        return batch_mask
