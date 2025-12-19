@@ -13,22 +13,33 @@ trainer:
   deterministic: true
   max_epochs: 10
   callbacks:
-    - _target_: lightning.pytorch.callbacks.ModelCheckpoint # periodic checkpoints
+    # 1. Periodic Checkpoint
+    checkpoint_periodic:
+      _target_: lightning.pytorch.callbacks.ModelCheckpoint
       dirpath: ${paths.checkpoints_dir}
       filename: periodic-epoch={epoch}-val_loss={val/loss:.2f}
       auto_insert_metric_name: false
       save_last: true
-    - _target_: lightning.pytorch.callbacks.ModelCheckpoint # best checkpoints
+    
+    # 2. Best Checkpoint
+    checkpoint_best:
+      _target_: lightning.pytorch.callbacks.ModelCheckpoint
       dirpath: ${paths.checkpoints_dir}
       filename: best-epoch={epoch}-val_loss={val/loss:.2f}
       auto_insert_metric_name: false
       save_top_k: 3
       monitor: val/loss
       mode: min
-    - _target_: lightning.pytorch.callbacks.LearningRateMonitor
+    
+    # 3. LR Monitor
+    lr_monitor:
+      _target_: lightning.pytorch.callbacks.LearningRateMonitor
       logging_interval: epoch
       log_momentum: true
-    - _target_: lightning.pytorch.callbacks.BatchSizeFinder # might need to comment this out for predictions
+    
+    # 4. Batch Size Finder
+    #batch_size_finder:
+    #  _target_: lightning.pytorch.callbacks.BatchSizeFinder
 #    - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor # logs quite a lot of data
 
 paths:

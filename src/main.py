@@ -1,15 +1,15 @@
 import sys
 from pathlib import Path
-
 import hydra
 import lightning as L
 import numpy as np
-import torch
+import soundfile as sf
 from hydra.utils import instantiate
+from omegaconf import OmegaConf  # <--- NEW IMPORT
 from symusic import Synthesizer, BuiltInSF3
 
-
 def to_audio(tokenizer, predictions, sample_rate):
+    """Helper for final manual generation"""
     synthesizer = Synthesizer(
         sf_path=BuiltInSF3.MuseScoreGeneral().path(download=True),
         sample_rate=sample_rate,
@@ -18,29 +18,23 @@ def to_audio(tokenizer, predictions, sample_rate):
     audios = []
     for pred in predictions:
         try:
-            midi = tokenizer.decode(pred[0].cpu().numpy())
-        except:
-            print("Failed to generate midi.")
+            if pred.dim() == 3: pred = pred[0]
+            midi = tokenizer.decode(pred.cpu().numpy())
+        except Exception as e:
+            print(f"Failed to generate midi: {e}")
             continue
         try:
             audio = synthesizer.render(midi, stereo=True)
-        except:
-            print("Failed to convert midi to audio.")
+        except Exception as e:
+            print(f"Failed to convert midi to audio: {e}")
             continue
         audio = np.ravel(np.array(audio))
         audios.append(audio)
     return audios
 
-
-def filter_duplicates(x):
-    bar_pos = x[:, :, 1:3]
-    _, idx = torch.unique(bar_pos, dim=0, return_inverse=True)
-    idx = torch.unique(idx)
-    return x[:, idx]
-
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
-    # add external libraries to import path
+    # 1. Setup Environment
     libs_dir = Path(__file__).resolve().parent / "libs"
     for lib in cfg.libs:
         sys.path.insert(0, str(libs_dir / lib))
@@ -48,10 +42,31 @@ def main(cfg):
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 
+    # 2. Instantiate Components
+    tokenizer = instantiate(cfg.dataset.tokenizer)
     logger = instantiate(cfg.logger)
     dataset = instantiate(cfg.dataset)
     model = instantiate(cfg.model)
-    trainer = instantiate(cfg.trainer, logger=logger)
+
+    # 3. Parse Callbacks (Dict -> List)
+    callbacks = []
+    if cfg.trainer.get("callbacks"):
+        for cb_name, cb_conf in cfg.trainer.callbacks.items():
+            if cb_conf is not None:
+                print(f"Instantiating callback: {cb_name}")
+                callbacks.append(instantiate(cb_conf))
+
+    # 4. Prepare Trainer Config (CRITICAL FIX)
+    # We convert the Hydra config to a standard Python dictionary.
+    # This allows us to delete the 'callbacks' key so it doesn't conflict with our list.
+    trainer_cfg = OmegaConf.to_container(cfg.trainer, resolve=True)
+    
+    if "callbacks" in trainer_cfg:
+        del trainer_cfg["callbacks"]
+
+    # 5. Instantiate Trainer
+    # Now 'trainer_cfg' has no 'callbacks' key, so passing 'callbacks=callbacks' works perfectly.
+    trainer = instantiate(trainer_cfg, logger=logger, callbacks=callbacks)
 
     print("\nTraining...")
     trainer.fit(model, datamodule=dataset)
@@ -59,19 +74,21 @@ def main(cfg):
     print("\nTesting...")
     trainer.test(model, datamodule=dataset)
 
-    print("Generating some samples (hopefully)...")
-    # for some reason trainer.predict is bugged, we iterate manually...
-    predictions = [
-        # trainer.predict(model, dataloaders=[1, 2, 3], ckpt_path="outputs/ckpts/2.ckpt")[0] # use this if checkpoint present
-        trainer.predict(model, dataloaders=[1, 2, 3])[0]  # use this if not
-        for _ in range(5)
-    ]
-    print(predictions)
-    tokenizer = instantiate(cfg.dataset.tokenizer)
+    # --- 6. Final Manual Generation Block ---
+    print("Generating final manual samples...")
+    predictions = []
+    for _ in range(5):
+        res = trainer.predict(model, datamodule=dataset)
+        if res:
+             predictions.append(res[0]) 
+
+    print(f"Generated {len(predictions)} final samples.")
+    
     sample_rate = 44100
     audios = to_audio(tokenizer, predictions, sample_rate)
-    logger.log_audio("pred/samples", audios, sample_rate=[sample_rate] * len(audios))
-
+    
+    if audios:
+        logger.log_audio("pred/final_samples", audios, sample_rate=[sample_rate] * len(audios))
 
 if __name__ == "__main__":
     main()

@@ -1,26 +1,30 @@
 # conf/model/musicbert_diffusion.yaml
 _target_: model.musicbert_diffusion.MusicBertDiffusion
 
+# In conf/model/musicbert_diffusion.yaml
+
 optimizer:
   _target_: torch.optim.AdamW
   _partial_: true
   lr: 0.0005
   weight_decay: 0.01
+  betas: [0.9, 0.98]
+  eps: 1.0e-6
 
 # Offsets shifted by +4 (Specials 0-3)
 # Raw: [0, 93, 193, 257, 293, 361, 494, 530]
-offsets: [4, 97, 197, 261, 297, 365, 498, 534]
+offsets: [4, 97, 197, 713, 749, 817, 950, 986]
 
 net:
   _target_: net.musicbert.MusicBERT
   
   # Exact size from your script
-  vocab_size: 548
+  vocab_size: 1000
   
   hidden_dim: 256
   num_layers: 6
   num_heads: 8
-  max_seq_len: 1024 
+  max_seq_len: 512 
   
   # CRITICAL: Now processing 8 attributes per note
   tokens_per_note: 8

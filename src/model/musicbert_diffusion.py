@@ -210,4 +210,29 @@ class MusicBertDiffusion(L.LightningModule):
     
     
     def configure_optimizers(self):
-        return self.optimizer_cls(self.parameters())
+        optimizer = self.optimizer_cls(self.parameters())
+        
+        # 2. Define Scheduler (Optional but recommended)
+        # Simple Linear Warmup implementation
+        # For a Dev run, you might want shorter warmup (e.g. 100 steps)
+        # For Full training, match the paper (25000 steps)
+        
+        from torch.optim.lr_scheduler import OneCycleLR
+        
+        # Example: OneCycleLR handles warmup + decay automatically
+        scheduler = OneCycleLR(
+            optimizer,
+            max_lr=0.0005,
+            total_steps=self.trainer.estimated_stepping_batches,
+            pct_start=0.1, # 10% warmup
+            div_factor=25,
+            final_div_factor=1000
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "step" # Update every step, not every epoch
+            }
+        }
