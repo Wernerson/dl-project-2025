@@ -1,22 +1,14 @@
-import torch
 import numpy as np
-import soundfile as sf
-from pathlib import Path
+import torch
 from lightning import Callback
-from hydra.utils import instantiate
-from omegaconf import DictConfig
 from symusic import Synthesizer, BuiltInSF3
 
+
 class GenerationCallback(Callback):
-    def __init__(self, tokenizer, sample_rate=44100, num_samples=3, output_dir=None):
+    def __init__(self, tokenizer, logger, sample_rate=44100, num_samples=3, quality=4):
         super().__init__()
-        
-        # Handle Tokenizer instantiation
-        if isinstance(tokenizer, (DictConfig, dict)):
-            self.tokenizer = instantiate(tokenizer)
-        else:
-            self.tokenizer = tokenizer
-            
+        self.tokenizer = tokenizer
+        self.logger = logger
         self.sample_rate = sample_rate
         self.num_samples = num_samples
         
@@ -24,36 +16,18 @@ class GenerationCallback(Callback):
         self.synthesizer = Synthesizer(
             sf_path=BuiltInSF3.MuseScoreGeneral().path(download=True),
             sample_rate=sample_rate,
-            quality=4
+            quality=quality
         )
 
-    def on_train_epoch_end(self, trainer, pl_module):
-        epoch_idx = trainer.current_epoch
-        
-        # --- 1. Find WandB Output Directory ---
-        # Try to get the WandB run directory. 
-        # Fallback to default_root_dir if WandB is not active.
-        try:
-            # This gets the actual folder like "wandb/run-2025.../files"
-            # We append 'media/audio/pred' to match the structure you wanted
-            base_path = Path(trainer.logger.experiment.dir) / "media" / "audio" / "pred"
-        except AttributeError:
-            # Fallback for offline/no-logger runs
-            base_path = Path(trainer.default_root_dir) / "generated_samples"
-
-        epoch_folder = base_path / f"epoch_{epoch_idx}"
-        epoch_folder.mkdir(parents=True, exist_ok=True)
-        
-        print(f"\n[Generation] Saving {self.num_samples} samples to: {epoch_folder}")
-        pl_module.eval()
-        
+    def on_train_epoch_end(self, trainer, model):
+        model.eval()
         for i in range(self.num_samples):
             try:
                 with torch.no_grad():
-                    # Generate tokens (128 notes)
-                    generated_tokens = pl_module.predict_step(None, 0, 0)
-                
-                if generated_tokens.dim() == 3: generated_tokens = generated_tokens[0]
+                    generated_tokens = model.predict_step(None, 0, 0)
+
+                if generated_tokens.dim() == 3:
+                    generated_tokens = generated_tokens[0]
                 tokens_np = generated_tokens.cpu().numpy()
                 
                 # Decode to MIDI object
@@ -92,13 +66,8 @@ class GenerationCallback(Callback):
                      audio_data = audio_data[:self.sample_rate * 60]
 
                 audio_np = np.ravel(np.array(audio_data))
-                
-                # Save WAV
-                wav_path = epoch_folder / f"sample_{i}.wav"
-                sf.write(wav_path, audio_np, self.sample_rate)
+                self.logger.log_audio("samples", [audio_np], sample_rate=[self.sample_rate], step=trainer.global_step)
                 
             except Exception as e:
                 # This catches the bad_alloc (MemoryError in Python)
                 print(f"[Generation] Skipped sample {i} due to rendering error: {e}")
-
-        pl_module.train()
