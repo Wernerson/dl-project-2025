@@ -1,5 +1,0 @@
-defaults:
-  - lakh-MIDI
-
-_target_: dataset.schmubert.SchmubertDataSampler
-seq_len: 256
