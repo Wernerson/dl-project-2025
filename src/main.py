@@ -1,6 +1,3 @@
-import sys
-from pathlib import Path
-
 import hydra
 import lightning as L
 import numpy as np
@@ -34,11 +31,6 @@ def to_audio(tokenizer, predictions, sample_rate):
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
-    # Setup Environment
-    libs_dir = Path(__file__).resolve().parent / "libs"
-    for lib in cfg.libs:
-        sys.path.insert(0, str(libs_dir / lib))
-
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 

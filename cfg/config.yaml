@@ -64,7 +64,3 @@ paths:
 
   # checkpoint directory
   checkpoints_dir: ${paths.output_dir}/checkpoints/
-
-# external libraries in "src/libs" added to path for import
-libs:
-  - "schmubert"
