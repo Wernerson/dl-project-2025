@@ -1,5 +1,5 @@
 defaults:
-  - lakh-MIDI
+  - lakh-MIDI-10k
 
 _target_: dataset.miditok.MIDITok
 batch_size: 1024
@@ -13,4 +13,4 @@ tokenizer:
       use_tempos: False
       use_time_signatures: False
       use_pitchdrum_tokens: False
-      max_bar_embedding: 128
+      max_bar_embedding: 127
