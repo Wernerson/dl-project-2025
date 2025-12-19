@@ -6,10 +6,11 @@ import torch.nn.functional as F
 
 
 class MusicBertDiffusion(L.LightningModule):
-    def __init__(self, net, optimizer, offsets, mask_strategy):
+    def __init__(self, net, optimizer, lr_scheduler, offsets, mask_strategy):
         super().__init__()
         self.net = net
-        self.optimizer_cls = optimizer
+        self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
         self.mask_strategy = mask_strategy
 
         # Register offsets buffer
@@ -198,23 +199,10 @@ class MusicBertDiffusion(L.LightningModule):
         return x_t - self.offsets
 
     def configure_optimizers(self):
-        optimizer = self.optimizer_cls(self.parameters())
-
-        # 2. Define Scheduler (Optional but recommended)
-        # Simple Linear Warmup implementation
-        # For a Dev run, you might want shorter warmup (e.g. 100 steps)
-        # For Full training, match the paper (25000 steps)
-
-        from torch.optim.lr_scheduler import OneCycleLR
-
-        # Example: OneCycleLR handles warmup + decay automatically
-        scheduler = OneCycleLR(
+        optimizer = self.optimizer(self.parameters())
+        scheduler = self.lr_scheduler(
             optimizer,
-            max_lr=0.0005,
             total_steps=self.trainer.estimated_stepping_batches,
-            pct_start=0.1, # 10% warmup
-            div_factor=25,
-            final_div_factor=1000
         )
 
         return {

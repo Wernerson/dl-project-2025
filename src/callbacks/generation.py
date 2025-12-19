@@ -32,31 +32,6 @@ class GenerationCallback(Callback):
                 
                 # Decode to MIDI object
                 midi_obj = self.tokenizer.decode(tokens_np)
-
-                # --- 2. Fix bad_alloc (Safety Check) ---
-                # Get duration in seconds (ticks / tpq * seconds_per_tick is roughly valid)
-                # A safer check is the end time of the last note
-                if len(midi_obj.tracks) > 0 and len(midi_obj.tracks[0].notes) > 0:
-                    last_note_end = midi_obj.tracks[0].notes[-1].end
-                    # Rough conversion: 480 ticks per beat, 120 bpm = 0.5s per beat
-                    # If the song is excessively long (e.g. > 100,000 ticks), skip it.
-                    # Or better: check the raw duration in seconds if symusic supports it easily.
-                    # For safety, let's just use a try/catch block with a timeout or strictly limit max ticks.
-                    
-                    # Manual heuristic: 128 notes * max duration is huge.
-                    # We simply clamp the error during rendering.
-                    pass 
-
-                # --- 3. Disable MIDI Saving ---
-                # midi_path = epoch_folder / f"sample_{i}.mid"
-                # midi_obj.dump_midi(str(midi_path))
-                
-                # Render Audio
-                # We wrap this in a stricter try/catch to catch C++ memory errors if possible,
-                # but preventing them is better. 
-                # Calculating duration in seconds:
-                # symusic doesn't give .duration_sec direct property easily without compute.
-                
                 # We render. If it fails due to size, the try-except below catches it.
                 audio_data = self.synthesizer.render(midi_obj, stereo=True)
                 

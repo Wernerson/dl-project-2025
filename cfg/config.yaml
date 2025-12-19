@@ -2,7 +2,6 @@ defaults:
   - model: midi
   - dataset: lakh-midi
   - logger: wandb
-  - _self_
 
 experiment_name: base
 seed: 42
@@ -12,7 +11,7 @@ trainer:
   logger: ${logger}
   deterministic: true
   max_epochs: 10
-  callbacks:
+  callbacks: # "-" makes callbacks a list
     # Periodic Checkpoint
     - _target_: lightning.pytorch.callbacks.ModelCheckpoint
       dirpath: ${paths.checkpoints_dir}
