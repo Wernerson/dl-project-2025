@@ -4,7 +4,7 @@
 trainer:
   fast_dev_run: true
   max_epochs: 1
-  limit_train_batches: 9
+  limit_train_batches: 20
   limit_val_batches: 1
   limit_test_batches: 1
 #  callbacks: # no callbacks in local runs

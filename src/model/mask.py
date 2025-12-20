@@ -1,6 +1,7 @@
 import random
 
 import torch
+import torch.nn.functional as F
 
 
 class MaskingStrategy:
@@ -104,3 +105,102 @@ class SequentialNoteMasking(MaskingStrategy):
         # Expand mask: [Batch, Seq, num tokens per note]
         batch_mask = mask.unsqueeze(1).expand(-1, dim).unsqueeze(0).expand(batch_size, -1, -1)
         return batch_mask
+
+
+class ProbabilisticMasking(MaskingStrategy):
+    """
+    Unmasks certain tokens with higher probability.
+    """
+
+    def __init__(self, mask_token_id, samples_per_step, P_token, P_seq):
+        super(ProbabilisticMasking, self).__init__()
+        self.mask_token_id = mask_token_id
+        self.samples_per_step = samples_per_step
+        self.P_token = P_token
+        self.P_seq = P_seq
+
+    def max_step(self, seq_len, dim) -> int:
+        return seq_len * dim // self.samples_per_step
+
+    def extrapolated_sequence_prior(self, seq_len, device):
+        L = len(self.P_seq)
+
+        # target positions in [0, L0 - 1]
+        pos = torch.linspace(0, L - 1, seq_len, device=device)
+
+        # linear interpolation
+        left = pos.floor().long()
+        right = torch.clamp(left + 1, max=L - 1)
+        w = pos - left.float()
+
+        P_seq = torch.tensor(self.P_seq, device=device)
+        scores = (1 - w) * P_seq[left] + w * P_seq[right]
+        return F.softmax(scores, dim=0)
+
+    def grid_logits(self, seq_len, device):
+        seq_logits = self.extrapolated_sequence_prior(seq_len, device)
+        token_logits = torch.tensor(self.P_token, device=device)
+        logits = seq_logits[:, None] + token_logits[None, :]
+        return logits
+
+    def sample(self, x, logits, k):
+        _, seq_len, dim = x.shape
+        probs = F.softmax(logits.flatten(), dim=0)
+        samples = torch.multinomial(probs, k)
+        mask = torch.zeros(seq_len * dim, dtype=torch.bool, device=x.device)
+        mask[samples] = True
+        return mask.view(seq_len, dim)
+
+    def noise_mask(self, x_0, t):
+        batch_size, seq_len, dim = x_0.shape
+        T = self.max_step(seq_len, dim)
+        if t == T:
+            return torch.ones((seq_len, dim), dtype=torch.bool, device=x.device)
+        logits = self.grid_logits(seq_len, x_0.device)
+        mask = self.sample(x_0, logits, T - t)
+        batch_mask = (~mask).unsqueeze(0).expand(batch_size, -1, -1)
+        return batch_mask
+
+    def denoise_mask(self, x_t, t):
+        batch_size, seq_len, dim = x_t.shape
+
+        logits = self.grid_logits(seq_len, x_t.device)
+        masked = x_t[0] == self.mask_token_id
+        logits[~masked] = float("-inf")
+
+        mask = self.sample(x_t, logits, self.samples_per_step)
+        batch_mask = mask.unsqueeze(0).expand(batch_size, -1, -1)
+        return batch_mask
+
+
+if __name__ == "__main__":
+    P_token = [
+        3,  # Pit
+        5,  # Pos
+        10,  # Bar
+        1,  # Vel
+        2,  # Dur
+        15,  # Pro
+        1,  # Tem
+        1,  # Tim
+    ]
+    P_seq = [
+        1,
+        2,
+        1
+    ]
+    mask_token = 77
+
+    x = torch.randn(2, 10, 8)
+    print(x.shape, x)
+
+    t = 60
+    ms = ProbabilisticMasking(mask_token, P_token, P_seq)
+    noise_mask = ms.noise_mask(x, t)
+    print(noise_mask.shape, noise_mask)
+    print(x[noise_mask])
+
+    x[noise_mask] = mask_token
+    denoise_mask = ms.denoise_mask(x, t)
+    print(denoise_mask.shape, denoise_mask)
+    print(x[denoise_mask])
