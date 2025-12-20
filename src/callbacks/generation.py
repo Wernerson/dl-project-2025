@@ -5,10 +5,9 @@ from symusic import Synthesizer, BuiltInSF3
 
 
 class SampleGeneration(Callback):
-    def __init__(self, tokenizer, logger, sample_rate=44100, num_samples=3, quality=4):
+    def __init__(self, tokenizer, sample_rate=44100, num_samples=3, quality=4):
         super(Callback, self).__init__()
         self.tokenizer = tokenizer
-        self.logger = logger
         self.sample_rate = sample_rate
         self.num_samples = num_samples
 
@@ -41,7 +40,7 @@ class SampleGeneration(Callback):
                     audio_data = audio_data[:self.sample_rate * 60]
 
                 audio_np = np.ravel(np.array(audio_data))
-                self.logger.log_audio(
+                trainer.logger.log_audio(
                     "val/samples", [audio_np],
                     sample_rate=[self.sample_rate],
                     step=trainer.current_epoch

@@ -39,7 +39,6 @@ trainer:
     # Generation
     - _target_: callbacks.generation.SampleGeneration
       tokenizer: ${dataset.tokenizer}
-      logger: ${logger}
       sample_rate: 44100
       num_samples: 3
 #    - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor # logs quite a lot of data
