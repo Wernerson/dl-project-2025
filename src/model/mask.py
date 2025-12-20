@@ -68,7 +68,7 @@ class NoteMasking(MaskingStrategy):
     def denoise_mask(self, x_t, t):
         batch_size, seq_len, dim = x_t.shape
         masked = x_t[0, :, 0] == self.mask_token_id
-        idx = torch.arange(seq_len)
+        idx = torch.arange(seq_len, device=x_t.device)
         unmask_idx = random.choice(idx[masked])
 
         mask = torch.zeros(seq_len, dtype=torch.bool, device=x_t.device)
