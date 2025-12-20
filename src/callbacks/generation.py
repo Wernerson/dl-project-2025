@@ -19,7 +19,7 @@ class SampleGeneration(Callback):
             quality=quality
         )
 
-    def on_validation_epoch_end(self, trainer, model):
+    def on_train_epoch_end(self, trainer, model):
         model.eval()
         for i in range(self.num_samples):
             try:

@@ -163,12 +163,11 @@ class MusicBertDiffusion(L.LightningModule):
 
         # 2. Iterative Unmasking
         T = self.mask_strategy.max_step(seq_len, dim)
-        mask_token = torch.tensor(self.mask_token_id, device=self.device)
         neg_inf = torch.tensor(float('-inf'), device=self.device)
         for t in reversed(range(1, T + 1)):
             # Mask x_t
             mask = self.mask_strategy.denoise_mask(x_t, t)
-            x_t[mask] = mask_token
+            x_t[mask] = self.mask_token_id
 
             # A. Network Prediction
             logits = self.compute_logits(x_t.view(1, -1), apply_constraints=True)
