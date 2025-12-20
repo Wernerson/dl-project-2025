@@ -5,6 +5,7 @@ _target_: model.musicbert_diffusion.MusicBertDiffusion
 
 mask_strategy:
   _target_: model.mask.NoteMasking
+  mask_token_id: ${eval:${model.net.vocab_size}-1}
 
 optimizer:
   _target_: torch.optim.AdamW

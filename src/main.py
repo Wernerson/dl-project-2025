@@ -1,7 +1,14 @@
 import hydra
 import lightning as L
 from hydra.utils import instantiate
+from omegaconf import OmegaConf
 
+from config import conf_expr
+
+OmegaConf.register_new_resolver(
+    "eval",
+    lambda expr, **vars: conf_expr(expr, vars),
+)
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):

@@ -92,38 +92,40 @@ class MusicBertDiffusion(L.LightningModule):
     def _sample_forward_loss(self, x_0):
         batch_size, seq_len, num_attribs = x_0.shape
 
-        # --- A. Detect Padding ---
-        is_padding = (x_0 == 0).all(dim=-1)  # [Batch, Seq]
-
-        # 1. Create Mask
+        # Create Mask
         T = self.mask_strategy.max_step(seq_len, num_attribs)
         t = random.randint(1, T)
-        is_masked_batch = self.mask_strategy.mask(x_0, t)
+        noise_mask = self.mask_strategy.noise_mask(x_0, t)
 
+        # Detect Padding
+        padding = (x_0 == 0).all(dim=-1).unsqueeze(-1).expand_as(noise_mask)
         # Ensure we NEVER mask padding (Padding must stay visible as Padding)
-        is_padding_expanded = is_padding.unsqueeze(-1).expand_as(is_masked_batch)
-        is_masked_batch = is_masked_batch & (~is_padding_expanded)
+        noise_mask = noise_mask & (~padding)
 
-        # 2. Apply Offsets & Masking
+        # Apply Offsets
         x_offset = x_0 + self.offsets
 
-        # 1. Override Padding with PAD_ID (1)
+        # Override Padding with PAD_ID (1)
         # (Otherwise 0+offset becomes a valid note like Pitch 4)
+        x_offset[padding] = torch.tensor(self.pad_token_id, device=self.device)
 
-        x_offset = torch.where(is_padding_expanded,
-                               torch.tensor(self.pad_token_id, device=self.device),
-                               x_offset)
+        # Mask
+        x_offset[noise_mask] = torch.tensor(self.mask_token_id, device=self.device)
 
-        x_t_flat = torch.where(is_masked_batch,
-                               torch.tensor(self.mask_token_id, device=self.device),
-                               x_offset).view(batch_size, -1)
+        # flatten
+        x_t_flat = x_offset.view(batch_size, -1)
 
+        # compute logits
         logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
-        # 5. Loss
+        # get denoise mask, these are the relevant tokens we want to predict at timestamp t
+        denoise_mask = self.mask_strategy.denoise_mask(x_offset, t)
+        denoise_mask = denoise_mask & (~padding)
+
+        # Loss
         target = x_offset
-        masked_logits = logits[is_masked_batch]
-        masked_targets = target[is_masked_batch]
+        masked_logits = logits[denoise_mask]
+        masked_targets = target[denoise_mask]
 
         if masked_targets.numel() == 0:
             return torch.tensor(0.0, device=self.device, requires_grad=True)
@@ -165,7 +167,7 @@ class MusicBertDiffusion(L.LightningModule):
         neg_inf = torch.tensor(float('-inf'), device=self.device)
         for t in reversed(range(1, T + 1)):
             # Mask x_t
-            mask = self.mask_strategy.mask(x_t, t)
+            mask = self.mask_strategy.denoise_mask(x_t, t)
             x_t[mask] = mask_token
 
             # A. Network Prediction
