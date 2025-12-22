@@ -119,13 +119,13 @@ class MusicBertDiffusion(L.LightningModule):
         logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
         # get denoise mask, these are the relevant tokens we want to predict at timestamp t
-        denoise_mask = self.mask_strategy.denoise_mask(x_offset, t)
-        denoise_mask = denoise_mask & (~padding)
+        # denoise_mask = self.mask_strategy.denoise_mask(x_offset, t)
+        # denoise_mask = denoise_mask & (~padding)
 
         # Loss
         target = x_offset
-        masked_logits = logits[denoise_mask]
-        masked_targets = target[denoise_mask]
+        masked_logits = logits[noise_mask]
+        masked_targets = target[noise_mask]
 
         if masked_targets.numel() == 0:
             return torch.tensor(0.0, device=self.device, requires_grad=True)
@@ -164,10 +164,14 @@ class MusicBertDiffusion(L.LightningModule):
         # 2. Iterative Unmasking
         T = self.mask_strategy.max_step(seq_len, dim)
         neg_inf = torch.tensor(float('-inf'), device=self.device)
-        for t in reversed(range(1, T + 1)):
+        for t in reversed(range(0, T + 1)):
             # Mask x_t
-            mask = self.mask_strategy.denoise_mask(x_t, t)
-            x_t[mask] = self.mask_token_id
+            if t > 0:
+                mask = self.mask_strategy.denoise_mask(x_t, t)
+                x_t[mask] = self.mask_token_id
+            else:
+                # last pass overrides all tokens
+                mask = torch.ones((1, seq_len, dim), dtype=torch.bool, device=x_t.device)
 
             # A. Network Prediction
             logits = self.compute_logits(x_t.view(1, -1), apply_constraints=True)
