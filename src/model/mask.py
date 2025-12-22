@@ -155,7 +155,7 @@ class ProbabilisticMasking(MaskingStrategy):
         batch_size, seq_len, dim = x_0.shape
         T = self.max_step(seq_len, dim)
         if t == T:
-            return torch.ones((seq_len, dim), dtype=torch.bool, device=x_0.device)
+            return torch.ones((batch_size, seq_len, dim), dtype=torch.bool, device=x_0.device)
         logits = self.grid_logits(seq_len, x_0.device)
         mask = self.sample(x_0, logits, T - t)
         batch_mask = (~mask).unsqueeze(0).expand(batch_size, -1, -1)
