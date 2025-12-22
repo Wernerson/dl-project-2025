@@ -29,6 +29,8 @@ class SampleGeneration(Callback):
                     generated_tokens = generated_tokens[0]
                 tokens_np = generated_tokens.cpu().numpy()
 
+                print(generated_tokens[0])
+
                 # Decode to MIDI object
                 midi_obj = self.tokenizer.decode(tokens_np)
 
@@ -50,3 +52,5 @@ class SampleGeneration(Callback):
 
             except Exception as e:
                 print(f"[Generation] Skipped sample {i} due to rendering error: {e}")
+                import traceback
+                traceback.print_exc()

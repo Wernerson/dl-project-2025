@@ -171,36 +171,3 @@ class ProbabilisticMasking(MaskingStrategy):
         mask = self.sample(x_t, logits, self.samples_per_step)
         batch_mask = mask.unsqueeze(0).expand(batch_size, -1, -1)
         return batch_mask
-
-
-if __name__ == "__main__":
-    P_token = [
-        3,  # Pit
-        5,  # Pos
-        10,  # Bar
-        1,  # Vel
-        2,  # Dur
-        15,  # Pro
-        1,  # Tem
-        1,  # Tim
-    ]
-    P_seq = [
-        1,
-        2,
-        1
-    ]
-    mask_token = 77
-
-    x = torch.randn(2, 10, 8)
-    print(x.shape, x)
-
-    t = 60
-    ms = ProbabilisticMasking(mask_token, P_token, P_seq)
-    noise_mask = ms.noise_mask(x, t)
-    print(noise_mask.shape, noise_mask)
-    print(x[noise_mask])
-
-    x[noise_mask] = mask_token
-    denoise_mask = ms.denoise_mask(x, t)
-    print(denoise_mask.shape, denoise_mask)
-    print(x[denoise_mask])
