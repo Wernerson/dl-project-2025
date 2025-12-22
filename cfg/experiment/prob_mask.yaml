@@ -10,6 +10,38 @@ experiment_name: probabilistic_masking
 dataset:
   # This should match the sequence length your model expects
   max_seq_len: 128
+  batch_size: 128
+
+trainer:
+  # we have to override callbacks because here wo don't want a batch finder
+  # (it will be overconfident and cause an out of memory error)
+  callbacks: # "-" makes callbacks a list
+    # Periodic Checkpoint
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint
+      dirpath: ${paths.checkpoints_dir}
+      filename: periodic-epoch={epoch}-val_loss={val/loss:.2f}
+      auto_insert_metric_name: false
+      save_last: true
+
+    # Best Checkpoint
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint
+      dirpath: ${paths.checkpoints_dir}
+      filename: best-epoch={epoch}-val_loss={val/loss:.2f}
+      auto_insert_metric_name: false
+      save_top_k: 3
+      monitor: val/loss
+      mode: min
+
+    # LR Monitor
+    - _target_: lightning.pytorch.callbacks.LearningRateMonitor
+      logging_interval: epoch
+      log_momentum: true
+
+    # Generation
+    - _target_: callbacks.generation.SampleGeneration
+      tokenizer: ${dataset.tokenizer}
+      sample_rate: 44100
+      num_samples: 3
 
 model:
   mask_strategy:
