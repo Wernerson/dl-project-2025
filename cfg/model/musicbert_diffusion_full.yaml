@@ -3,17 +3,31 @@ _target_: model.musicbert_diffusion.MusicBertDiffusion
 
 # In conf/model/musicbert_diffusion.yaml
 
+mask_strategy:
+  _target_: model.mask.NoteMasking
+  mask_token_id: ${eval:${model.net.vocab_size}-1}
+
 optimizer:
   _target_: torch.optim.AdamW
   _partial_: true
   lr: 0.0005
   weight_decay: 0.01
-  betas: [0.9, 0.98]
+  betas: [ 0.9, 0.98 ]
   eps: 1.0e-6
+
+# Simple Linear Warmup implementation
+# OneCycleLR handles warmup + decay automatically
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.OneCycleLR
+  _partial_: true
+  max_lr: 0.0005
+  pct_start: 0.1 # 10% warmup
+  div_factor: 25
+  final_div_factor: 1000
 
 # Offsets shifted by +4 (Specials 0-3)
 # Raw: [0, 93, 193, 257, 293, 361, 494, 530]
-offsets: [4, 97, 197, 713, 749, 817, 950, 986]
+offsets: [ 4, 97, 197, 713, 749, 817, 950, 986 ]
 
 net:
   _target_: net.musicbert.MusicBERT
@@ -24,7 +38,7 @@ net:
   hidden_dim: 256
   num_layers: 6
   num_heads: 8
-  max_seq_len: 512 
+  max_seq_len: 512
   
   # CRITICAL: Now processing 8 attributes per note
   tokens_per_note: 8

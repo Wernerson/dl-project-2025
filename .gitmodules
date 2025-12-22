@@ -1,3 +1,0 @@
-[submodule "schmubert"]
-	path = src/libs/schmubert
-	url = https://github.com/plassma/symbolic-music-discrete-diffusion.git

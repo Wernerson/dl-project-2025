@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=360
+#SBATCH --time=60
 #SBATCH --account=deep_learning
 #SBATCH --gpus 5060ti:1
 #SBATCH --mem=24G
@@ -10,4 +10,4 @@ fi
 . /etc/profile.d/modules.sh
 module add cuda/12.9
 source .venv/bin/activate
-python3 src/main.py +experiment=$1 +run=cluster
+HYDRA_FULL_ERROR=1 python3 src/main.py +experiment=$1 +run=cluster

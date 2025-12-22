@@ -1,4 +1,0 @@
-_target_: dataset.mnist.MNISTDataModule
-train_val_split: [0.9, 0.1]
-data_dir: "${paths.data_dir}"
-batch_size: 32

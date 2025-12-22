@@ -1,0 +1,63 @@
+# @package _global_
+
+defaults:
+  - override /dataset: miditok_full
+  - override /model: musicbert_diffusion_full
+
+experiment_name: probabilistic_masking
+
+# Dataset overrides to match your MidiTok config
+dataset:
+  # This should match the sequence length your model expects
+  max_seq_len: 128
+  batch_size: 128
+
+trainer:
+  # we have to override callbacks because here wo don't want a batch finder
+  # (it will be overconfident and cause an out of memory error)
+  callbacks: # "-" makes callbacks a list
+    # Periodic Checkpoint
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint
+      dirpath: ${paths.checkpoints_dir}
+      filename: periodic-epoch={epoch}-val_loss={val/loss:.2f}
+      auto_insert_metric_name: false
+      save_last: true
+
+    # Best Checkpoint
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint
+      dirpath: ${paths.checkpoints_dir}
+      filename: best-epoch={epoch}-val_loss={val/loss:.2f}
+      auto_insert_metric_name: false
+      save_top_k: 3
+      monitor: val/loss
+      mode: min
+
+    # LR Monitor
+    - _target_: lightning.pytorch.callbacks.LearningRateMonitor
+      logging_interval: epoch
+      log_momentum: true
+
+    # Generation
+    - _target_: callbacks.generation.SampleGeneration
+      tokenizer: ${dataset.tokenizer}
+      sample_rate: 44100
+      num_samples: 3
+
+model:
+  mask_strategy:
+    _target_: model.mask.ProbabilisticMasking
+    mask_token_id: ${eval:${model.net.vocab_size}-1}
+    samples_per_step: 8
+    P_token: # probability per token in note, will be normalized (8 numbers)
+      - 2  # Pit
+      - 3  # Pos
+      - 3  # Bar
+      - 1  # Vel
+      - 2  # Dur
+      - 3  # Pro
+      - 1  # Tem
+      - 1  # Tim
+    P_seq: # probability distribution in sequence, arbitrary length
+      - 1
+      - 2
+      - 1

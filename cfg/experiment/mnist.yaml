@@ -1,6 +1,0 @@
-# @package _global_
-defaults:
-  - override /dataset: mnist
-  - override /model: mnist
-
-experiment_name: mnist
