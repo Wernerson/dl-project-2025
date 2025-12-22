@@ -31,15 +31,17 @@ class SampleGeneration(Callback):
 
                 # Decode to MIDI object
                 midi_obj = self.tokenizer.decode(tokens_np)
+
+                # clip midi to 10s max, otherwise we run out of memory
+                total_duration = midi_obj.end()
+                if total_duration > 10:
+                    midi_obj = midi_obj.clip(0, 10)
+
                 # We render. If it fails due to size, the try-except below catches it.
                 audio_data = self.synthesizer.render(midi_obj, stereo=True)
-
-                # Check if audio is empty or too huge before processing
-                if len(audio_data) > self.sample_rate * 60:  # Limit to 60 seconds
-                    print(f"[Generation] Sample {i} too long ({len(audio_data) / self.sample_rate:.1f}s), truncating.")
-                    audio_data = audio_data[:self.sample_rate * 60]
-
                 audio_np = np.ravel(np.array(audio_data))
+
+                # log to WandB
                 trainer.logger.log_audio(
                     "val/samples", [audio_np],
                     sample_rate=[self.sample_rate],
@@ -47,5 +49,4 @@ class SampleGeneration(Callback):
                 )
 
             except Exception as e:
-                # This catches the bad_alloc (MemoryError in Python)
                 print(f"[Generation] Skipped sample {i} due to rendering error: {e}")
