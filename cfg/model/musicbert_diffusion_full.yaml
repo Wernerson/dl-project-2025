@@ -4,22 +4,8 @@ _target_: model.musicbert_diffusion.MusicBertDiffusion
 # In conf/model/musicbert_diffusion.yaml
 
 mask_strategy:
-  _target_: model.mask.ProbabilisticMasking
+  _target_: model.mask.NoteMasking
   mask_token_id: ${eval:${model.net.vocab_size}-1}
-  samples_per_step: 8
-  P_token: # probability per token in note, will be normalized (8 numbers)
-    - 3  # Pit
-    - 5  # Pos
-    - 10  # Bar
-    - 1  # Vel
-    - 2  # Dur
-    - 15  # Pro
-    - 1  # Tem
-    - 1  # Tim
-  P_seq: # probability distribution in sequence, arbitrary length
-    - 1
-    - 2
-    - 1
 
 optimizer:
   _target_: torch.optim.AdamW

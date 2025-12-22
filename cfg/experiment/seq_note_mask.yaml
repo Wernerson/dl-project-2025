@@ -1,0 +1,16 @@
+# @package _global_
+
+defaults:
+  - override /dataset: miditok_full
+  - override /model: musicbert_diffusion_full
+
+experiment_name: sequential_note_masking
+
+# Dataset overrides to match your MidiTok config
+dataset:
+  # This should match the sequence length your model expects
+  max_seq_len: 128
+
+model:
+  mask_strategy:
+    _target_: model.mask.SequentialNoteMasking
