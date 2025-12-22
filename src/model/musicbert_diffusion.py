@@ -98,7 +98,7 @@ class MusicBertDiffusion(L.LightningModule):
         noise_mask = self.mask_strategy.noise_mask(x_0, t)
 
         # Detect Padding
-        padding = (x_0 == 0).all(dim=-1).unsqueeze(-1).expand_as(noise_mask)
+        padding = x_0 == 0
         # Ensure we NEVER mask padding (Padding must stay visible as Padding)
         noise_mask = noise_mask & (~padding)
 
@@ -107,25 +107,28 @@ class MusicBertDiffusion(L.LightningModule):
 
         # Override Padding with PAD_ID (1)
         # (Otherwise 0+offset becomes a valid note like Pitch 4)
-        x_offset[padding] = torch.tensor(self.pad_token_id, device=self.device)
+        x_offset = torch.where(padding,
+                               torch.tensor(self.pad_token_id, device=self.device),
+                               x_offset)
 
         # Mask
-        x_offset[noise_mask] = torch.tensor(self.mask_token_id, device=self.device)
+        x_masked = torch.where(noise_mask,
+                               torch.tensor(self.mask_token_id, device=self.device),
+                               x_offset).view(batch_size, -1)
 
         # flatten
-        x_t_flat = x_offset.view(batch_size, -1)
+        x_t_flat = x_masked.view(batch_size, -1)
 
         # compute logits
         logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
         # get denoise mask, these are the relevant tokens we want to predict at timestamp t
-        # denoise_mask = self.mask_strategy.denoise_mask(x_offset, t)
-        # denoise_mask = denoise_mask & (~padding)
+        denoise_mask = self.mask_strategy.denoise_mask(x_offset, t)
+        denoise_mask = denoise_mask & (~padding)
 
         # Loss
-        target = x_offset
-        masked_logits = logits[noise_mask]
-        masked_targets = target[noise_mask]
+        masked_logits = logits[denoise_mask]
+        masked_targets = x_offset[denoise_mask]
 
         if masked_targets.numel() == 0:
             return torch.tensor(0.0, device=self.device, requires_grad=True)
@@ -163,7 +166,7 @@ class MusicBertDiffusion(L.LightningModule):
 
         # 2. Iterative Unmasking
         T = self.mask_strategy.max_step(seq_len, dim)
-        neg_inf = torch.tensor(float('-inf'), device=self.device)
+        neg_inf = float('-inf')
         for t in reversed(range(0, T + 1)):
             # Mask x_t
             if t > 0:
@@ -173,7 +176,7 @@ class MusicBertDiffusion(L.LightningModule):
                 # last pass overrides all tokens
                 mask = torch.ones((1, seq_len, dim), dtype=torch.bool, device=x_t.device)
 
-            # A. Network Prediction
+            # A. Network Prediction [1, seq len, tokens per note, Vocab]
             logits = self.compute_logits(x_t.view(1, -1), apply_constraints=True)
 
             # 1. Apply Temperature
@@ -190,7 +193,7 @@ class MusicBertDiffusion(L.LightningModule):
             min_values = v[:, :, :, -1].unsqueeze(-1).expand_as(logits)
             logits[logits < min_values] = neg_inf
 
-            # 3. Sample from the filtered distribution
+            # 3. Sample from the filtered distribution [1, seq len, tokens per note, Vocab]
             probs = F.softmax(logits, dim=-1)
 
             # We flatten to 2D [x, Vocab] to use multinomial, then reshape back
