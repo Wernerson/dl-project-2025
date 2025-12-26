@@ -1,0 +1,15 @@
+# @package _global_
+# overrides for evaluation
+
+checkpoint: outputs/ckpts/best-epoch=7-val_loss=1.38.ckpt
+
+logger:
+  offline: true
+  log_model: false
+
+trainer:
+  fast_dev_run: true
+  callbacks: # no callbacks in eval runs
+
+paths:
+  sample_dir: ${paths.output_dir}/samples/
