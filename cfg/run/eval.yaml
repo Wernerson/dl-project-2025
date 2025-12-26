@@ -10,6 +10,3 @@ logger:
 trainer:
   fast_dev_run: true
   callbacks: # no callbacks in eval runs
-
-paths:
-  sample_dir: ${paths.output_dir}/samples/
