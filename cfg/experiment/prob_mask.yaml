@@ -40,6 +40,7 @@ trainer:
     # Generation
     - _target_: callbacks.generation.SampleGeneration
       tokenizer: ${dataset.tokenizer}
+      sample_dir: ${paths.sample_dir}
       sample_rate: 44100
       num_samples: 3
 
