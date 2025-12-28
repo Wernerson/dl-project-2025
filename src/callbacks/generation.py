@@ -35,10 +35,10 @@ class SampleGeneration(Callback):
                 # Decode to MIDI object
                 midi_obj = self.tokenizer.decode(tokens_np)
 
-                # clip midi to 10s max, otherwise we run out of memory
+                # clip midi to 60s max, otherwise we run out of memory
                 total_duration = midi_obj.end()
-                if total_duration > 10:
-                    midi_obj = midi_obj.clip(0, 10)
+                if total_duration > 60:
+                    midi_obj = midi_obj.clip(0, 60)
 
                 # We render. If it fails due to size, the try-except below catches it.
                 audio = self.synthesizer.render(midi_obj, stereo=True)

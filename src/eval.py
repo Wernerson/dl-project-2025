@@ -36,6 +36,10 @@ def main(cfg):
     print("Rendering sample...")
     tokenizer = instantiate(cfg.dataset.tokenizer)
     score = tokenizer.decode(tokens_np)
+    total_duration = score.end()
+    if total_duration > 60:
+        score = score.clip(0, 60)
+
     synth = Synthesizer(BuiltInSF3.MuseScoreGeneral().path())
     audio = synth.render(score)
     sample_dir = Path(cfg.paths.sample_dir)
