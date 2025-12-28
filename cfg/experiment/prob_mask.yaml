@@ -10,7 +10,7 @@ experiment_name: probabilistic_masking
 dataset:
   # This should match the sequence length your model expects
   max_seq_len: 128
-  batch_size: 128
+  batch_size: 64
 
 trainer:
   # we have to override callbacks because here wo don't want a batch finder
