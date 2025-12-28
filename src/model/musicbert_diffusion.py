@@ -114,7 +114,7 @@ class MusicBertDiffusion(L.LightningModule):
         # Mask
         x_masked = torch.where(noise_mask,
                                torch.tensor(self.mask_token_id, device=self.device),
-                               x_offset).view(batch_size, -1)
+                               x_offset)
 
         # flatten
         x_t_flat = x_masked.view(batch_size, -1)
