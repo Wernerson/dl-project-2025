@@ -123,12 +123,12 @@ class MusicBertDiffusion(L.LightningModule):
         logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
         # get denoise mask, these are the relevant tokens we want to predict at timestamp t
-        # denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
-        # denoise_mask = denoise_mask & (~padding)
+        denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
+        denoise_mask = denoise_mask & (~padding)
 
         # Loss
-        masked_logits = logits[noise_mask]
-        masked_targets = x_offset[noise_mask]
+        masked_logits = logits[denoise_mask]
+        masked_targets = x_offset[denoise_mask]
 
         if masked_targets.numel() == 0:
             return torch.tensor(0.0, device=self.device, requires_grad=True)
