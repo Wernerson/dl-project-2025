@@ -3,58 +3,34 @@ from pathlib import Path
 
 import torch
 from lightning import Callback
-from symusic import Synthesizer, dump_wav, BuiltInSF3
+from utils import AudioConverter
 
 
 class SampleGeneration(Callback):
-    def __init__(self, tokenizer, sample_dir, sample_rate=44100, num_samples=3, quality=4):
+    def __init__(self, converter: AudioConverter, sample_dir, num_samples=3):
         super(Callback, self).__init__()
-        self.tokenizer = tokenizer
         self.sample_dir = sample_dir
-        self.sample_rate = sample_rate
         self.num_samples = num_samples
-
-        # Initialize Synthesizer
-        self.synthesizer = Synthesizer(
-            sf_path=BuiltInSF3.MuseScoreGeneral().path(download=True),
-            sample_rate=sample_rate,
-            quality=quality
-        )
+        self.converter = converter
 
     def on_train_epoch_end(self, trainer, model):
         model.eval()
         for i in range(self.num_samples):
             try:
                 with torch.no_grad():
-                    generated_tokens = model.sample()
-
-                if generated_tokens.dim() == 3:
-                    generated_tokens = generated_tokens[0]
-                tokens_np = generated_tokens.cpu().numpy()
-
-                # Decode to MIDI object
-                midi_obj = self.tokenizer.decode(tokens_np)
-
-                # clip midi to 60s max, otherwise we run out of memory
-                total_duration = midi_obj.end()
-                if total_duration > 60:
-                    midi_obj = midi_obj.clip(0, 60)
-
-                # We render. If it fails due to size, the try-except below catches it.
-                audio = self.synthesizer.render(midi_obj, stereo=True)
+                    tokens = model.sample()
 
                 sample_dir = Path(self.sample_dir)
                 if not os.path.exists(sample_dir):
                     os.makedirs(sample_dir)
                 file = sample_dir / f"epoch={trainer.current_epoch}_sample_{i}.wav"
-
-                dump_wav(str(file), audio, sample_rate=self.sample_rate)
+                self.converter.to_wav(tokens, str(file))
 
                 # log to WandB
                 trainer.logger.log_audio(
                     "val/samples", [file],
-                    sample_rate=[self.sample_rate],
-                    step=trainer.current_epoch
+                    sample_rate=[self.converter.sample_rate],
+                    step=trainer.global_step
                 )
 
             except Exception as e:
