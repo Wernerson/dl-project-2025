@@ -7,11 +7,12 @@ from utils import AudioConverter
 
 
 class SampleGeneration(Callback):
-    def __init__(self, converter: AudioConverter, sample_dir, num_samples=3):
+    def __init__(self, converter: AudioConverter, sample_dir, seq_len, num_samples=3):
         super(Callback, self).__init__()
-        self.sample_dir = sample_dir
-        self.num_samples = num_samples
         self.converter = converter
+        self.sample_dir = sample_dir
+        self.seq_len = seq_len
+        self.num_samples = num_samples
 
     def on_train_epoch_end(self, trainer, model):
         model.eval()

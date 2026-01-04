@@ -42,6 +42,7 @@ trainer:
       converter: ${evaluator.converter}
       sample_dir: ${paths.sample_dir}
       num_samples: 3
+      seq_len: ${dataset.max_seq_len}
 
 model:
   mask_strategy:

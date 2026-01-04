@@ -41,6 +41,7 @@ trainer:
     - _target_: callbacks.generation.SampleGeneration
       converter: ${evaluator.converter}
       sample_dir: ${paths.sample_dir}
+      seq_len: ${dataset.max_seq_len}
       num_samples: 3
 #    - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor # logs quite a lot of data
 
@@ -50,6 +51,7 @@ evaluator:
   ref_data_dir: ${paths.data_dir}/MIDITok/processed/
   num_samples: 20
   num_references: 20
+  seq_len: ${dataset.max_seq_len}
   converter:
     _target_: utils.AudioConverter
     tokenizer: ${dataset.tokenizer}

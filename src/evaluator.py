@@ -17,6 +17,7 @@ class Evaluator:
             ref_data_dir: str,
             num_references: int,
             num_samples: int,
+            seq_len: int,
             converter: AudioConverter,
             metrics: Sequence[Metric]
     ):
@@ -26,6 +27,7 @@ class Evaluator:
         self.ref_data_dir = ref_data_dir
         self.num_references = num_references
         self.num_samples = num_samples
+        self.seq_len = seq_len
         self.converter = converter
         self.metrics = metrics
 
@@ -54,7 +56,7 @@ class Evaluator:
         for i in range(self.num_samples):
             try:
                 with torch.no_grad():
-                    tokens = model.sample()
+                    tokens = model.sample(self.seq_len)
                 midi_file = os.path.join(self.sample_dir, f"sample_{i}.mid")
                 self.converter.to_midi(tokens, midi_file)
             except Exception as e:
