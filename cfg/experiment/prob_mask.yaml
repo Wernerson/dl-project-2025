@@ -39,9 +39,7 @@ trainer:
 
     # Generation
     - _target_: callbacks.generation.SampleGeneration
-      converter:
-        _target_: utils.AudioConverter
-        tokenizer: ${dataset.tokenizer}
+      converter: ${eval.converter}
       sample_dir: ${paths.sample_dir}
       num_samples: 3
 

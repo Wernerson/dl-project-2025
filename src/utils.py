@@ -33,6 +33,10 @@ class AudioConverter:
         score = self.to_score(tokens)
         score.dump_abc(file)
 
+    def to_midi(self, tokens, file):
+        score = self.to_score(tokens)
+        score.dump_midi(file)
+
     def midi_to_abc(self, midi_file, abc_file):
         score = Score.from_file(midi_file, fmt="midi")
         score.dump_abc(abc_file)

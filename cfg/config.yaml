@@ -39,12 +39,17 @@ trainer:
 
     # Generation
     - _target_: callbacks.generation.SampleGeneration
-      converter:
-        _target_: utils.AudioConverter
-        tokenizer: ${dataset.tokenizer}
+      converter: ${eval.converter}
       sample_dir: ${paths.sample_dir}
       num_samples: 3
 #    - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor # logs quite a lot of data
+
+eval:
+  num_samples: 20
+  num_references: 40
+  converter:
+    _target_: utils.AudioConverter
+    tokenizer: ${dataset.tokenizer}
 
 paths:
   # path to root directory
@@ -68,3 +73,6 @@ paths:
 
   # directory for sample generation
   sample_dir: ${paths.output_dir}/samples/
+
+  # directory for evaluation samples
+  eval_dir: ${paths.output_dir}/eval/
