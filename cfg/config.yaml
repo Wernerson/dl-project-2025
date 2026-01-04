@@ -68,6 +68,21 @@ evaluator:
       logger: ${logger}
       references_dir: ${paths.eval_dir}/ref
       sample_dir: ${paths.eval_dir}/samples
+      metrics:
+        - "Drum in Pattern Rate"
+        - "Drum Pattern Consistency"
+#        - "Empty Beat Rate" # seems to take a long time or crash
+#        - "Empty Measure Rate" # seems to take a long time or crash
+        - "Groove Consistency"
+        - "Num of Pitch Classes Used"
+        - "Num of Pitches Used"
+        - "Pitch Class Entropy"
+        - "Pitch Entropy"
+        - "Pitch in Scale Rate"
+        - "Pitch Range"
+#        - "Polyphony" # seems to crash
+#        - "Polyphony Rate" # seems to crash
+        - "Scale Consistency"
 
 paths:
   # path to root directory

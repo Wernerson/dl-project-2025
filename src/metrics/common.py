@@ -66,9 +66,11 @@ class CommonMetrics(Metric):
 def get_stat(metric, dir):
     func = MUSPY_METRICS[metric]
     files = list(Path(dir).glob("**/*.mid"))
-    pitch_range = []
+    values = []
     for file in files:
         m = muspy.read(file, kind="midi")
-        pitch_range.append(func(m))
-    value = np.mean(pitch_range)
+        values.append(func(m))
+    if len(values) == 0:
+        return None
+    value = np.mean(values)
     return value.item() if not np.isnan(value) else None
