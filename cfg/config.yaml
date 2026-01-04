@@ -11,7 +11,7 @@ trainer:
   logger: ${logger}
   deterministic: true
   max_epochs: 10
-  max_time: 00:00:50:00
+  max_time: 00:02:30:00
   callbacks: # "-" makes callbacks a list
     # Periodic Checkpoint
     - _target_: lightning.pytorch.callbacks.ModelCheckpoint
