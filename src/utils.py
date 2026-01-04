@@ -1,4 +1,3 @@
-from miditok import Octuple, TokenizerConfig
 from symusic import Score, Synthesizer, dump_wav, BuiltInSF3
 
 
@@ -40,9 +39,3 @@ class AudioConverter:
     def midi_to_abc(self, midi_file, abc_file):
         score = Score.from_file(midi_file, fmt="midi")
         score.dump_abc(abc_file)
-
-
-if __name__ == "__main__":
-    tokenizer = Octuple(TokenizerConfig())
-    ac = AudioConverter(tokenizer)
-    ac.midi_to_abc("data/MIDITok/processed/1_0.mid", "data/MIDITok/abc2/midi_1.abc")

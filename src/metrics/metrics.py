@@ -5,3 +5,6 @@ class Metric(ABC):
     @abstractmethod
     def evaluate(self):
         raise NotImplemented
+
+    def prepare(self):
+        pass

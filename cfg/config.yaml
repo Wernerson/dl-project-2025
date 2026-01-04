@@ -39,17 +39,29 @@ trainer:
 
     # Generation
     - _target_: callbacks.generation.SampleGeneration
-      converter: ${eval.converter}
+      converter: ${evaluator.converter}
       sample_dir: ${paths.sample_dir}
       num_samples: 3
 #    - _target_: lightning.pytorch.callbacks.DeviceStatsMonitor # logs quite a lot of data
 
-eval:
+evaluator:
+  _target_: evaluator.Evaluator
+  eval_dir: ${paths.eval_dir}
+  ref_data_dir: ${paths.data_dir}/MIDITok/processed/
   num_samples: 20
-  num_references: 40
+  num_references: 20
   converter:
     _target_: utils.AudioConverter
     tokenizer: ${dataset.tokenizer}
+  metrics:
+    - _target_: metrics.fmd.FMD
+      logger: ${logger}
+      references_dir: ${paths.eval_dir}/ref
+      sample_dir: ${paths.eval_dir}/samples
+    - _target_: metrics.fss.FSS
+      logger: ${logger}
+      references_dir: ${paths.eval_dir}/ref
+      sample_dir: ${paths.eval_dir}/samples
 
 paths:
   # path to root directory

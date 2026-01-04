@@ -35,5 +35,3 @@ class SampleGeneration(Callback):
 
             except Exception as e:
                 print(f"[Generation] Skipped sample {i} due to rendering error: {e}")
-                import traceback
-                traceback.print_exc()
