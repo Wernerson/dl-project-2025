@@ -3,7 +3,7 @@ from typing import Union
 from frechet_music_distance import FrechetMusicDistance
 from frechet_music_distance.gaussian_estimators import GaussianEstimator
 from frechet_music_distance.models import FeatureExtractor
-from metrics.metrics import Metric
+from metrics.common import Metric
 
 
 class FMD(Metric):

@@ -62,6 +62,10 @@ evaluator:
       logger: ${logger}
       references_dir: ${paths.eval_dir}/ref
       sample_dir: ${paths.eval_dir}/samples
+    - _target_: metrics.common.CommonMetrics
+      logger: ${logger}
+      references_dir: ${paths.eval_dir}/ref
+      sample_dir: ${paths.eval_dir}/samples
 
 paths:
   # path to root directory

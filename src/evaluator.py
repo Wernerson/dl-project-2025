@@ -7,7 +7,7 @@ from typing import Sequence
 import torch
 
 from utils import AudioConverter
-from metrics.metrics import Metric
+from metrics.common import Metric
 
 
 class Evaluator:
@@ -65,8 +65,6 @@ class Evaluator:
         self.sample(model)
         for metric in self.metrics:
             try:
-                print(f"Start metric {type(metric).__name__}")
                 metric.evaluate()
-                print(f"End metric {type(metric).__name__}")
             except Exception as e:
                 print(f"[Evaluation] Metric {type(metric).__name__} failed to evaluate: {e}")

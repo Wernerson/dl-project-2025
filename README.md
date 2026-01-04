@@ -14,7 +14,7 @@
     - [PyTorch & Cuda Guide](https://www.isg.inf.ethz.ch/Main/HelpClusterComputingStudentClusterCuda)
 - Install `torch` and other project dependencies
     - `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128 --upgrade`
-    - `pip install miditok hydra-core lightning wandb note-seq frechet-music-distance`
+    - `pip install miditok hydra-core lightning wandb note-seq frechet-music-distance muspy`
 - Login to WandB
     - `wandb login <key>`
 - Run jobs with: `sbatch run.sh <experiment name here>`

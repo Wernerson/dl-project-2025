@@ -3,7 +3,7 @@ from pathlib import Path
 from statistics import NormalDist
 
 import numpy as np
-from metrics.metrics import Metric
+from metrics.common import Metric
 from note_seq import midi_file_to_note_sequence
 from note_seq import quantize_note_sequence
 from note_seq import sequences_lib
