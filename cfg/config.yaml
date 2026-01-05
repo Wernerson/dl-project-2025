@@ -109,7 +109,7 @@ paths:
   sample_dir: ${paths.output_dir}/samples/
 
   # directory for evaluation samples
-  eval_dir: ${paths.output_dir}/eval/
+  eval_dir: ${paths.output_dir}/eval
 
   # cache dir for FMD metric, only overridden for cluster run
   fmd_cache_dir: null
