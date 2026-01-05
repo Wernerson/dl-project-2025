@@ -60,6 +60,7 @@ evaluator:
       logger: ${logger}
       references_dir: ${paths.eval_dir}/ref
       sample_dir: ${paths.eval_dir}/samples
+      cache_dir: ${paths.fmd_cache_dir}
     - _target_: metrics.fss.FSS
       logger: ${logger}
       references_dir: ${paths.eval_dir}/ref
@@ -109,3 +110,6 @@ paths:
 
   # directory for evaluation samples
   eval_dir: ${paths.output_dir}/eval/
+
+  # cache dir for FMD metric, only overridden for cluster run
+  fmd_cache_dir: null

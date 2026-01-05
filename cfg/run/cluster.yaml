@@ -4,3 +4,6 @@
 paths:
   # override data storage paths
   data_dir: ${oc.env:TMPDIR}/data
+
+  # override cash for FMD metric
+  fmd_cache_dir: "/work/scratch/${oc.env:USER}/.cache/frechet_music_distance/checkpoints/clamp2"

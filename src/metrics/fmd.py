@@ -3,6 +3,7 @@ from typing import Union
 from frechet_music_distance import FrechetMusicDistance
 from frechet_music_distance.gaussian_estimators import GaussianEstimator
 from frechet_music_distance.models import FeatureExtractor
+from frechet_music_distance.models.clamp2 import config
 from metrics.common import Metric
 
 
@@ -16,6 +17,7 @@ class FMD(Metric):
             logger,
             references_dir: str,
             sample_dir: str,
+            cache_dir: str = None,
             extractor: Union[str, FeatureExtractor] = "clamp2",
             estimator: Union[str, GaussianEstimator] = "mle"
     ):
@@ -23,11 +25,15 @@ class FMD(Metric):
         self.logger = logger
         self.references_dir = references_dir
         self.sample_dir = sample_dir
+        self.cache_dir = cache_dir
         self.extractor = extractor
         self.estimator = estimator
         self.fmd = None
 
     def prepare(self):
+        # override cache directory if set
+        if self.cache_dir:
+            config.CLAMP2_WEIGHT_DIR = self.cache_dir
         self.fmd = FrechetMusicDistance(
             feature_extractor=self.extractor,
             gaussian_estimator=self.estimator
