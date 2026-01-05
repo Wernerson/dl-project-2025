@@ -10,4 +10,6 @@ fi
 . /etc/profile.d/modules.sh
 module add cuda/12.9
 source .venv/bin/activate
-HYDRA_FULL_ERROR=1 python3 src/main.py +experiment=$1 +run=cluster
+export HF_HOME="/work/scratch/$USER/.cache/huggingface/datasets"
+export HYDRA_FULL_ERROR=1
+python3 src/main.py +experiment=$1 +run=cluster
