@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 from matplotlib.colors import BoundaryNorm
 
-from src.model.mask import ProbabilisticMasking
+from model.mask import ProbabilisticMasking
 
 
 def plot_mask_vis(mask_vis, T):
