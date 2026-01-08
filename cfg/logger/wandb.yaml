@@ -1,5 +1,5 @@
 _target_: lightning.pytorch.loggers.wandb.WandbLogger
-name: ${experiment_name}_${now:%Y-%m-%d_%H-%M-%S}
+name: ${experiment_name}
 save_dir: "${paths.output_dir}"
 offline: False
 project: "symb-music-gen"
