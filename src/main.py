@@ -16,9 +16,12 @@ def main(cfg):
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 
+    logger = instantiate(cfg.logger)
+    logger.log_hyperparams(cfg)
+
     dataset = instantiate(cfg.dataset)
     model = instantiate(cfg.model)
-    trainer = instantiate(cfg.trainer)
+    trainer = instantiate(cfg.trainer, logger=logger)
     evaluator = instantiate(cfg.evaluator)
 
     print("\nTraining...")
