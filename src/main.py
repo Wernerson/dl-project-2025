@@ -13,6 +13,14 @@ OmegaConf.register_new_resolver(
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
+    # Print configuration
+    print("=" * 80)
+    print("Configuration:")
+    print("=" * 80)
+    print(OmegaConf.to_yaml(cfg))
+    print("=" * 80)
+
+
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
 
