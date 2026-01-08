@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=360
+#SBATCH --time=180
 #SBATCH --account=deep_learning
 #SBATCH --gpus 5060ti:1
 #SBATCH --mem=24G
