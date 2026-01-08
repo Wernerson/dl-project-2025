@@ -7,7 +7,13 @@ trainer:
   limit_train_batches: 5
   limit_val_batches: 1
   limit_test_batches: 1
-#  callbacks: # no callbacks in local runs
+  callbacks:
+    # Generation
+    - _target_: callbacks.generation.SampleGeneration
+      converter: ${evaluator.converter}
+      sample_dir: ${paths.sample_dir}
+      num_samples: 3
+      seq_len: ${dataset.max_seq_len}
 logger:
   offline: true
   log_model: false
