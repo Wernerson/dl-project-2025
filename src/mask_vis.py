@@ -31,17 +31,16 @@ def plot_mask_vis(mask_vis, T):
 
 P_token = [  # probability per token in note, will be normalized (8 numbers)
     2,  # Pit
-    3,  # Pos
-    3,  # Bar
+    4,  # Pos
+    5,  # Bar
     1,  # Vel
-    2,  # Dur
+    1,  # Dur
     3,  # Pro
     1,  # Tem
     1,  # Tim
 ]
 P_seq = [  # probability distribution in sequence, arbitrary length
-    3,
-    1,
+    5,
     1,
 ]
 
