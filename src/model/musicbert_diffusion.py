@@ -6,12 +6,21 @@ import torch.nn.functional as F
 
 
 class MusicBertDiffusion(L.LightningModule):
-    def __init__(self, net, optimizer, lr_scheduler, offsets, mask_strategy):
+    def __init__(
+            self,
+            net,
+            optimizer, lr_scheduler,
+            offsets, mask_strategy,
+            denoise_mask_loss = False,
+            denoise_mask_fw = True,
+    ):
         super().__init__()
         self.net = net
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.mask_strategy = mask_strategy
+        self.denoise_mask_loss = denoise_mask_loss
+        self.denoise_mask_fw = denoise_mask_fw
 
         # Register offsets buffer
         self.register_buffer('offsets', torch.tensor(offsets, dtype=torch.long))
@@ -122,13 +131,18 @@ class MusicBertDiffusion(L.LightningModule):
         # compute logits
         logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
-        # get denoise mask, these are the relevant tokens we want to predict at timestamp t
-        denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
-        denoise_mask = denoise_mask & (~padding)
+        if self.denoise_mask_loss:
+            # get denoise mask, these are the relevant tokens we want to predict at timestamp t
+            denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
+            denoise_mask = denoise_mask & (~padding)
 
-        # Loss
-        masked_logits = logits[denoise_mask]
-        masked_targets = x_offset[denoise_mask]
+            # Loss
+            masked_logits = logits[denoise_mask]
+            masked_targets = x_offset[denoise_mask]
+        else:
+            masked_logits = logits[noise_mask]
+            masked_targets = x_offset[noise_mask]
+
 
         if masked_targets.numel() == 0:
             return torch.tensor(0.0, device=self.device, requires_grad=True)
@@ -197,7 +211,10 @@ class MusicBertDiffusion(L.LightningModule):
             sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(1, seq_len, dim)
 
             # B. Update only masked entries
-            x_t[mask] = sampled_ids[mask]
+            if self.denoise_mask_fw:
+                x_t[mask] = sampled_ids[mask]
+            else:
+                x_t = sampled_ids
 
         return x_t - self.offsets
 
