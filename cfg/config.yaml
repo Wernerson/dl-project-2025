@@ -49,8 +49,8 @@ evaluator:
   _target_: evaluator.Evaluator
   eval_dir: ${paths.eval_dir}
   ref_data_dir: ${paths.data_dir}/MIDITok/processed/
-  num_samples: 20
-  num_references: 20
+  num_samples: 1000
+  num_references: 10000
   seq_len: ${dataset.max_seq_len}
   converter:
     _target_: utils.AudioConverter
