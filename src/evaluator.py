@@ -56,7 +56,7 @@ class Evaluator:
         for i in range(self.num_samples):
             try:
                 with torch.no_grad():
-                    tokens = model.sample(self.seq_len, log_mask=True)
+                    tokens = model.sample(self.seq_len)
                 midi_file = os.path.join(self.sample_dir, f"sample_{i}.mid")
                 self.converter.to_midi(tokens, midi_file)
             except Exception as e:

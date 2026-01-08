@@ -3,8 +3,7 @@ import random
 import lightning as L
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
-from matplotlib.colors import BoundaryNorm
+from mask_vis import plot_mask_vis
 
 
 class MusicBertDiffusion(L.LightningModule):
@@ -168,14 +167,10 @@ class MusicBertDiffusion(L.LightningModule):
         self.log("test/loss", loss, prog_bar=True)
         return loss
 
-    def sample(self, seq_len=128, top_k = 50, temperature = 1.0, log_mask=False):
+    def sample(self, seq_len=128, top_k = 50, temperature = 1.0):
         # top_k: restrict to top X choices (prevents weird bad notes)
         # temperature: 1.0 = standard, >1.0 = chaotic, <1.0 = conservative
         dim = self.tokens_per_note
-
-        # visualize at which timestep we unmasked which token
-        if log_mask:
-            mask_vis = torch.zeros((seq_len, dim), device=self.device)
 
         # 1. Start: All Masked
         x_t = torch.full((1, seq_len, dim), self.mask_token_id, device=self.device, dtype=torch.long)
@@ -186,10 +181,6 @@ class MusicBertDiffusion(L.LightningModule):
         for t in reversed(range(1, T + 1)):
             # Mask x_t
             mask = self.mask_strategy.denoise_mask(x_t, t)
-            if log_mask:
-                mask_vis[mask_vis > 0] += 1
-                mask_vis[mask[0]] = 1
-
             x_t[mask] = self.mask_token_id
 
             # A. Network Prediction [1, seq len, tokens per note, Vocab]
@@ -221,29 +212,6 @@ class MusicBertDiffusion(L.LightningModule):
                 x_t[mask] = sampled_ids[mask]
             else:
                 x_t = sampled_ids
-
-        if log_mask:
-            fig = plt.figure()
-            plt.title("Masking Schedule")
-            cmap = plt.get_cmap("viridis", T)  # T = number of timesteps
-            norm = BoundaryNorm(range(T+1), cmap.N)
-            plt.imshow(mask_vis.T, cmap=cmap, norm=norm, aspect="auto")
-            cbar = plt.colorbar(orientation="horizontal", label="Demasking Timestep")
-            cbar.set_ticks([0, T-1])
-            cbar.set_ticklabels(["Late (t=0)", "Early (t=T)"])
-            plt.yticks(range(8), labels=[
-                "Pit",
-                "Pos",
-                "Bar",
-                "Vel",
-                "Dur",
-                "Pro",
-                "Tem",
-                "Tim",
-            ]) # todo verify that this order is correct...
-            plt.xlabel("Note Sequence")
-            plt.close(fig)
-            self.logger.log_image(key="masks", images=[fig], step=self.global_step)
 
         return x_t - self.offsets
 

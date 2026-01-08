@@ -135,7 +135,7 @@ class ProbabilisticMasking(MaskingStrategy):
 
         P_seq = torch.tensor(self.P_seq, device=device)
         scores = (1 - w) * P_seq[left] + w * P_seq[right]
-        return F.softmax(scores, dim=0)
+        return scores
 
     def grid_logits(self, seq_len, device):
         seq_logits = self.extrapolated_sequence_prior(seq_len, device)
