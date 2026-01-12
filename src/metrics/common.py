@@ -6,6 +6,7 @@ from typing import Sequence
 import muspy
 import muspy.metrics as mpm
 import numpy as np
+from tqdm import tqdm
 
 
 class Metric(ABC):
@@ -49,7 +50,7 @@ class CommonMetrics(Metric):
 
     def evaluate(self):
         metrics = {}
-        for metric in self.metrics:
+        for metric in tqdm(self.metrics, desc="Calculating metrics"):
             ref_value = get_stat(metric, self.references_dir)
             if ref_value is not None:
                 metrics[f"Mean Reference {metric}"] = ref_value
@@ -65,7 +66,7 @@ def get_stat(metric, dir):
     func = MUSPY_METRICS[metric]
     files = list(Path(dir).glob("**/*.mid"))
     values = []
-    for file in files:
+    for file in tqdm(files, f"Files in {dir}", leave=False):
         m = muspy.read(file, kind="midi")
         values.append(func(m))
     if len(values) == 0:

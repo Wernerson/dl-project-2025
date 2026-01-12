@@ -6,6 +6,7 @@ from typing import Sequence
 
 import torch
 from tqdm import tqdm
+from tqdm.auto import trange
 
 from utils import AudioConverter
 from metrics.common import Metric
@@ -56,15 +57,19 @@ class Evaluator:
     def sample(self, model):
         # create samples
         model.eval()
-        for i in tqdm(range(self.num_samples // self.batch_size), desc="Generating samples"):
+        failed = 0
+        for b in trange(self.num_samples // self.batch_size + 1, desc="Generating samples"):
                 with torch.no_grad():
                     token_batch = model.sample(seq_len = self.seq_len, batch_size = self.batch_size)
-                for b, tokens in enumerate(token_batch):
+                for i, tokens in enumerate(token_batch):
+                    if b * self.batch_size + i - failed > self.num_samples:
+                        break # enough samples created
                     try:
-                        midi_file = os.path.join(self.sample_dir, f"sample_{i}_{b}.mid")
+                        midi_file = os.path.join(self.sample_dir, f"sample_{b}_{i}.mid")
                         self.converter.to_midi(tokens, midi_file)
                     except Exception as e:
-                        print(f"[Evaluation] Skipped sample {i}, batch item {b} due to rendering error: {e}")
+                        print(f"[Evaluation] Skipped sample from batch {b}, item {i} due to rendering error: {e}")
+                        failed += 1
 
     def evaluate(self, model):
         self.prepare()
