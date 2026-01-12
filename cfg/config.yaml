@@ -48,9 +48,7 @@ trainer:
 evaluator:
   _target_: evaluator.Evaluator
   eval_dir: ${paths.eval_dir}
-  ref_data_dir: ${paths.data_dir}/MIDITok/processed/
   num_samples: 1000
-  num_references: 10000
   seq_len: ${dataset.max_seq_len}
   converter:
     _target_: utils.AudioConverter
@@ -58,16 +56,16 @@ evaluator:
   metrics:
     - _target_: metrics.fmd.FMD
       logger: ${logger}
-      references_dir: ${paths.eval_dir}/ref
+      references_dir: ${paths.data_dir}/MIDITok/processed
       sample_dir: ${paths.eval_dir}/samples
       cache_dir: ${paths.fmd_cache_dir}
     - _target_: metrics.fss.FSS
       logger: ${logger}
-      references_dir: ${paths.eval_dir}/ref
+      references_dir: ${paths.data_dir}/MIDITok/processed
       sample_dir: ${paths.eval_dir}/samples
     - _target_: metrics.common.CommonMetrics
       logger: ${logger}
-      references_dir: ${paths.eval_dir}/ref
+      references_dir: ${paths.data_dir}/MIDITok/processed
       sample_dir: ${paths.eval_dir}/samples
       metrics:
         - "Drum in Pattern Rate"
@@ -92,7 +90,7 @@ paths:
   root_dir: "." # ${oc.env:PROJECT_ROOT:.}
 
   # path to data directory
-  data_dir: ${paths.root_dir}/data/
+  data_dir: ${paths.root_dir}/data
 
   # path to output directory, created dynamically by hydra
   # path generation pattern is specified in `configs/hydra/default.yaml`

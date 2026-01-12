@@ -14,8 +14,6 @@ class Evaluator:
     def __init__(
             self,
             eval_dir: str,
-            ref_data_dir: str,
-            num_references: int,
             num_samples: int,
             seq_len: int,
             converter: AudioConverter,
@@ -24,8 +22,6 @@ class Evaluator:
         self.eval_dir = eval_dir
         self.ref_dir = os.path.join(eval_dir, "ref")
         self.sample_dir = os.path.join(eval_dir, "samples")
-        self.ref_data_dir = ref_data_dir
-        self.num_references = num_references
         self.num_samples = num_samples
         self.seq_len = seq_len
         self.converter = converter
@@ -39,12 +35,6 @@ class Evaluator:
             os.mkdir(self.ref_dir)
         if not os.path.exists(self.sample_dir):
             os.mkdir(self.sample_dir)
-
-        # copy references from dataset
-        ref_files = list(Path(self.ref_data_dir).glob("**/*.mid"))
-        ref_files = random.sample(ref_files, k=self.num_references)
-        for file in ref_files:
-            shutil.copy(file, self.ref_dir)
 
         # prepare metrics
         for metric in self.metrics:

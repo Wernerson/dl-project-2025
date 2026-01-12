@@ -1,10 +1,7 @@
-import os
-from pathlib import Path
-
 import hydra
+import lightning as L
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
-from symusic import Synthesizer, dump_wav, BuiltInSF3
 
 from config import conf_expr
 from model.musicbert_diffusion import MusicBertDiffusion
@@ -17,7 +14,23 @@ OmegaConf.register_new_resolver(
 
 @hydra.main(version_base=None, config_path="../cfg", config_name="config")
 def main(cfg):
-    print(cfg)
+    # Print configuration
+    print("=" * 80)
+    print("Configuration:")
+    print("=" * 80)
+    print(OmegaConf.to_yaml(cfg))
+    print("=" * 80)
+
+
+    if cfg.get("seed"):
+        L.seed_everything(cfg.seed, workers=True)
+
+    logger = instantiate(cfg.logger)
+    logger.log_hyperparams(cfg)
+
+    dataset = instantiate(cfg.dataset)
+    dataset.prepare_data()
+
     model = MusicBertDiffusion.load_from_checkpoint(
         cfg.checkpoint,
         net=instantiate(cfg.model.net),
@@ -27,28 +40,9 @@ def main(cfg):
         mask_strategy=instantiate(cfg.model.mask_strategy)
     )
 
-    print("Start sampling...")
-    model.eval()
-    tokens = model.sample()
-    tokens_np = tokens[0].cpu().numpy()
-    print("Sampling one.")
-
-    print("Rendering sample...")
-    tokenizer = instantiate(cfg.dataset.tokenizer)
-    score = tokenizer.decode(tokens_np)
-    total_duration = score.end()
-    if total_duration > 60:
-        score = score.clip(0, 60)
-
-    synth = Synthesizer(BuiltInSF3.MuseScoreGeneral().path())
-    audio = synth.render(score)
-    sample_dir = Path(cfg.paths.sample_dir)
-    if not os.path.exists(sample_dir):
-        os.makedirs(sample_dir)
-    file = sample_dir / "sample.wav"
-    dump_wav(str(file), audio, sample_rate=44100)
-    print(f"Rendering done. Check {file}")
-
+    evaluator = instantiate(cfg.evaluator)
+    print("\nEvaluating...")
+    evaluator.evaluate(model)
 
 if __name__ == "__main__":
     main()
