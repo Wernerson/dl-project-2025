@@ -79,6 +79,6 @@ class Evaluator:
                 m = metric.evaluate()
                 for name, value in m.items():
                     print(type(metric).__name__, name, value)
-                    self.logger.experiment.summary[f"eval/{name}"] = value
+                    self.logger.experiment.log({f"eval/{name}": value})
             except Exception as e:
                 print(f"[Evaluation] Metric {type(metric).__name__} failed to evaluate: {e}")
