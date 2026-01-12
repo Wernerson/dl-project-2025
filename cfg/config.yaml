@@ -52,6 +52,7 @@ evaluator:
   ref_data_dir: ${paths.data_dir}/MIDITok/processed
   num_samples: 8000 # should be 10-50 times embedding dim, CLaMP 2 has embedding dim 768 => ~8k
   seq_len: ${dataset.max_seq_len}
+  batch_size: ${dataset.batch_size}
   converter:
     _target_: utils.AudioConverter
     tokenizer: ${dataset.tokenizer}

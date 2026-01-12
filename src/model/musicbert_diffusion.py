@@ -167,24 +167,23 @@ class MusicBertDiffusion(L.LightningModule):
         self.log("test/loss", loss, prog_bar=True)
         return loss
 
-    def sample(self, seq_len=128, top_k = 50, temperature = 1.0):
+    def sample(self, seq_len=128, top_k = 50, temperature = 1.0, batch_size=1):
         # top_k: restrict to top X choices (prevents weird bad notes)
         # temperature: 1.0 = standard, >1.0 = chaotic, <1.0 = conservative
         dim = self.tokens_per_note
 
         # 1. Start: All Masked
-        x_t = torch.full((1, seq_len, dim), self.mask_token_id, device=self.device, dtype=torch.long)
+        x_t = torch.full((batch_size, seq_len, dim), self.mask_token_id, device=self.device, dtype=torch.long)
 
         # 2. Iterative Unmasking
         T = self.mask_strategy.max_step(seq_len, dim)
-        neg_inf = float('-inf')
         for t in reversed(range(1, T + 1)):
             # Mask x_t
             mask = self.mask_strategy.denoise_mask(x_t, t)
             x_t[mask] = self.mask_token_id
 
-            # A. Network Prediction [1, seq len, tokens per note, Vocab]
-            logits = self.compute_logits(x_t.view(1, -1), apply_constraints=True)
+            # A. Network Prediction [batch_size, seq len * tokens per note * Vocab]
+            logits = self.compute_logits(x_t.view(batch_size, -1), apply_constraints=True)
 
             # 1. Apply Temperature
             # Higher T makes distribution flatter (more random)
@@ -197,15 +196,15 @@ class MusicBertDiffusion(L.LightningModule):
 
             # Create a mask of -inf for everything NOT in the top k
             # (Everything smaller than the k-th best value becomes -inf)
-            min_values = v[:, :, :, -1].unsqueeze(-1).expand_as(logits)
-            logits[logits < min_values] = neg_inf
+            min_values = v[:, :, :, -1].unsqueeze(-1)
+            logits[logits < min_values] = float('-inf')
 
             # 3. Sample from the filtered distribution [1, seq len, tokens per note, Vocab]
             probs = F.softmax(logits, dim=-1)
 
             # We flatten to 2D [x, Vocab] to use multinomial, then reshape back
-            # Result: [1, seq_len, 8] containing the chosen token IDs
-            sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(1, seq_len, dim)
+            # Result: [batch_size, seq_len, 8] containing the chosen token IDs
+            sampled_ids = torch.multinomial(probs.view(-1, probs.size(-1)), 1).view(batch_size, seq_len, dim)
 
             # B. Update only masked entries
             if self.denoise_mask_fw:
