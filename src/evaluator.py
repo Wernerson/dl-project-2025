@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 import torch
+from tqdm import tqdm
 
 from utils import AudioConverter
 from metrics.common import Metric
@@ -43,7 +44,7 @@ class Evaluator:
     def sample(self, model):
         # create samples
         model.eval()
-        for i in range(self.num_samples):
+        for i in tqdm(range(self.num_samples), desc="Generating samples"):
             try:
                 with torch.no_grad():
                     tokens = model.sample(self.seq_len)
