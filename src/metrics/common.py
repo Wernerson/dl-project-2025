@@ -38,13 +38,11 @@ MUSPY_METRICS = {  # TODO adjust parameters
 class CommonMetrics(Metric):
     def __init__(
             self,
-            logger,
             references_dir: str,
             sample_dir: str,
             metrics: Sequence[str] = MUSPY_METRICS.keys()
     ):
         super(CommonMetrics, self).__init__()
-        self.logger = logger
         self.references_dir = references_dir
         self.sample_dir = sample_dir
         self.metrics = metrics
@@ -60,7 +58,7 @@ class CommonMetrics(Metric):
             if sample_value is not None:
                 metrics[f"Mean Sample {metric}"] = sample_value
 
-        self.logger.log_metrics(metrics)
+        return metrics
 
 
 def get_stat(metric, dir):

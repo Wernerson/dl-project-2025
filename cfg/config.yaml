@@ -47,25 +47,24 @@ trainer:
 
 evaluator:
   _target_: evaluator.Evaluator
+  logger: ${logger}
   eval_dir: ${paths.eval_dir}
-  num_samples: 1000
+  ref_data_dir: ${paths.data_dir}/MIDITok/processed
+  num_samples: 15000 # should be 10-50 times embedding dim, CLaMP 2 has embedding dim 768 => ~15k
   seq_len: ${dataset.max_seq_len}
   converter:
     _target_: utils.AudioConverter
     tokenizer: ${dataset.tokenizer}
   metrics:
     - _target_: metrics.fmd.FMD
-      logger: ${logger}
-      references_dir: ${paths.data_dir}/MIDITok/processed
+      references_dir: ${paths.eval_dir}/ref
       sample_dir: ${paths.eval_dir}/samples
       cache_dir: ${paths.fmd_cache_dir}
-    - _target_: metrics.fss.FSS
-      logger: ${logger}
-      references_dir: ${paths.data_dir}/MIDITok/processed
-      sample_dir: ${paths.eval_dir}/samples
+#    - _target_: metrics.fss.FSS # currently doesn't work
+#      references_dir: ${paths.eval_dir}/ref
+#      sample_dir: ${paths.eval_dir}/samples
     - _target_: metrics.common.CommonMetrics
-      logger: ${logger}
-      references_dir: ${paths.data_dir}/MIDITok/processed
+      references_dir: ${paths.eval_dir}/ref
       sample_dir: ${paths.eval_dir}/samples
       metrics:
         - "Drum in Pattern Rate"

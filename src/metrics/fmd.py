@@ -14,7 +14,6 @@ class FMD(Metric):
 
     def __init__(
             self,
-            logger,
             references_dir: str,
             sample_dir: str,
             cache_dir: str = None,
@@ -22,7 +21,6 @@ class FMD(Metric):
             estimator: Union[str, GaussianEstimator] = "mle"
     ):
         super(FMD, self).__init__()
-        self.logger = logger
         self.references_dir = references_dir
         self.sample_dir = sample_dir
         self.cache_dir = cache_dir
@@ -41,4 +39,4 @@ class FMD(Metric):
 
     def evaluate(self):
         fmd = self.fmd.score(self.references_dir, self.sample_dir)
-        self.logger.log_metrics({"Frechet Music Distance": fmd})
+        return {"Frechet Music Distance": fmd}

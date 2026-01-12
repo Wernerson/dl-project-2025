@@ -14,9 +14,8 @@ class FSS(Metric):
     Framewise Self-Similarity from SCHmUBERT
     """
 
-    def __init__(self, logger, references_dir, sample_dir):
+    def __init__(self, references_dir, sample_dir):
         super(FSS, self).__init__()
-        self.logger = logger
         self.references_dir = references_dir
         self.sample_dir = sample_dir
 
@@ -24,12 +23,12 @@ class FSS(Metric):
         references = get_ns(self.references_dir)
         samples = get_ns(self.sample_dir)
         (c_pitch, c_duration), (v_pitch, v_duration) = evaluate_consistency_variance(references, samples)
-        self.logger.log_metrics({
+        return {
             "Pitch Consistency": c_pitch,
             "Pitch Variance": v_duration,
             "Duration Consistency": c_duration,
             "Duration Variance": v_pitch,
-        })
+        }
 
 
 def get_ns(path):
