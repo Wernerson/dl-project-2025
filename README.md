@@ -20,6 +20,22 @@
 - Run jobs with: `sbatch run.sh <experiment name here>`
     - [Running jobs](https://www.isg.inf.ethz.ch/Main/HelpClusterComputingStudentClusterRunningJobs)
 
+### Run training on cluster
+
+```bash
+sbatch run.sh <experiment_name_here>
+```
+
+### Run evaluation on cluster
+
+```bash
+sbatch eval.sh <experiment_name_here> <checkpoint_file_path_here>
+```
+
+**Note:** The best checkpoint of each experiment will be saved in `./outputs/checkpoints/<experiment_name_here>/best.ckpt`, if you already want to schedule an evaluation before training completes.
+This file will be overridden by experiments with the same name tho.
+
+
 ### Add an external library / repo
 
 1. `cd src/libs`
