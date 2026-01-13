@@ -68,7 +68,9 @@ def get_stat(metric, dir):
     values = []
     for file in tqdm(files, f"Files in {dir}", leave=False):
         m = muspy.read(file, kind="midi")
-        values.append(func(m))
+        v = func(m)
+        if v is not None and not np.isnan(v):
+            values.append(v)
     if len(values) == 0:
         return None
     value = np.mean(values)
