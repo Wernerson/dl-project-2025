@@ -10,7 +10,7 @@ if [ -z "$1" ]; then
 fi
 
 if [ -z "$2" ]; then
-    echo "You must pass a checkpiont, e.g. 'outputs/.../last.ckpt'"
+    echo "You must pass a checkpoint, e.g. 'outputs/.../last.ckpt'"
     exit 1
 fi
 

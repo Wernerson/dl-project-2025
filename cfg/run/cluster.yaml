@@ -6,6 +6,5 @@ paths:
   data_dir: ${oc.env:TMPDIR}/data
   eval_dir: ${oc.env:TMPDIR}/eval
 
-
   # override cash for FMD metric
   fmd_cache_dir: "/work/scratch/${oc.env:USER}/.cache/frechet_music_distance/checkpoints/clamp2"

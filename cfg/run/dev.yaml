@@ -8,6 +8,14 @@ trainer:
   limit_val_batches: 1
   limit_test_batches: 1
   callbacks:
+    # Best Checkpoint
+    - _target_: lightning.pytorch.callbacks.ModelCheckpoint
+      dirpath: ${paths.checkpoints_dir}
+      filename: best
+      auto_insert_metric_name: false
+      save_top_k: 1
+      monitor: val/loss
+      mode: min
     # Generation
     - _target_: callbacks.generation.SampleGeneration
       converter: ${evaluator.converter}
