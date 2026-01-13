@@ -50,7 +50,7 @@ evaluator:
   logger: ${logger}
   eval_dir: ${paths.eval_dir}
   ref_data_dir: ${paths.data_dir}/MIDITok/processed
-  num_samples: 15000 # should be 10-50 times embedding dim, CLaMP 2 has embedding dim 768
+  num_samples: 10000 # FMD paper also uses 10k subsets
   seq_len: ${dataset.max_seq_len}
   batch_size: ${dataset.batch_size}
   converter:
