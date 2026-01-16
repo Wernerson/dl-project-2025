@@ -30,3 +30,7 @@ dataset:
   download_url: https://polybox.ethz.ch/index.php/s/MnQDB4opQdR7nat/download/lakh-midi-1k.tar.gz
 evaluator:
   num_samples: 5
+
+hydra:
+  run:
+    dir: outputs/${experiment_name}/${now:%Y-%m-%d_%H-%M-%S}
