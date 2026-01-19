@@ -38,29 +38,20 @@ This file will be overridden by experiments with the same name tho.
 
 # Samples
 
-Here are two samples generated from one of our models:
+Down below are two generated & two reference samples embedded as video (muted by default)!
+They can also be found as `.wav` and `.mid` under `samples/`. 
 
-<audio controls>
-  <source src="samples/sample_1.wav" type="audio/mpeg">
-</audio>
+## Generated 
 
-<audio controls>
-  <source src="samples/sample_1.mp4" type="audio/mpeg">
-</audio>
+https://github.com/user-attachments/assets/674dfbfe-359d-4543-9c94-c923d8e55bb8
 
-<audio controls>
-  <source src="https://github.com/Wernerson/dl-project-2025/raw/refs/heads/master/samples/reference_1.wav" type="audio/mpeg">
-</audio>
+https://github.com/user-attachments/assets/49bb2247-5ea3-4c08-91c4-5dd443b86937
 
-<audio controls>
-  <source src="https://github.com/Wernerson/dl-project-2025/raw/refs/heads/master/samples/reference_1.mp4" type="audio/mpeg">
-</audio>
+## References
 
-Here are two references files:
+https://github.com/user-attachments/assets/1d54524d-3d43-473e-9cca-bcc8838c0a19
 
-<video src='samples/reference_1.mp4'/>
-
-<video src='samples/reference_2.mp4'/>
+https://github.com/user-attachments/assets/429cbf1d-5ad7-440b-bee8-ff863e3a40c3
 
 # Experiments
 
