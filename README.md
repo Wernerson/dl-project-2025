@@ -1,4 +1,6 @@
-# DL 2025 Project
+# Prior-Guided Probabilistic Masking for Symbolic Music Generation
+
+## DL 2025 Project
 
 > by Sebastian Brunner, Felix Schatzl, Harald Semmelrock
 
@@ -63,7 +65,7 @@ These experiment files (`<name>.yaml`) correspond to the experiments in the pape
 - `harch-useq`: Hierarchical USeq
 - `rand`: Random
 - `rand-note`: Random Note
-- `seq`: Sequential
+- `seq`: Sequential Note
 
 Run experiments with for example: `experiment=co-hierarchical`.
 
