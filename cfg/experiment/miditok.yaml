@@ -1,6 +1,0 @@
-# @package _global_
-defaults:
-  - override /dataset: miditok
-  - override /model: ours
-
-experiment_name: miditok

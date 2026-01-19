@@ -1,10 +1,6 @@
 # @package _global_
 
-defaults:
-  - override /dataset: miditok_full
-  - override /model: musicbert_diffusion_full
-
-experiment_name: probabilistic
+experiment_name: "Probabilistic"
 
 # Dataset overrides to match your MidiTok config
 dataset:
@@ -36,21 +32,3 @@ trainer:
       sample_dir: ${paths.sample_dir}
       num_samples: 3
       seq_len: ${dataset.max_seq_len}
-
-model:
-  mask_strategy:
-    _target_: model.mask.ProbabilisticMasking
-    mask_token_id: ${eval:${model.net.vocab_size}-1}
-    samples_per_step: 8
-    P_token: # probability per token in note, will be normalized (8 numbers)
-      - 2  # Pit
-      - 4  # Pos
-      - 5  # Bar
-      - 1  # Vel
-      - 1  # Dur
-      - 3  # Pro
-      - 1  # Tem
-      - 1  # Tim
-    P_seq: # probability distribution in sequence, arbitrary length
-      - 5
-      - 1

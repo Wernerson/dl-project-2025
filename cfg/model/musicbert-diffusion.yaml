@@ -1,10 +1,6 @@
-# conf/model/musicbert_diffusion.yaml
 _target_: model.musicbert_diffusion.MusicBertDiffusion
-
-# In conf/model/musicbert_diffusion.yaml
-
 mask_strategy:
-  _target_: model.mask.NoteMasking
+  _target_: model.mask.NoteMasking #default strategy
 
 optimizer:
   _target_: torch.optim.AdamW
@@ -25,19 +21,15 @@ lr_scheduler:
   final_div_factor: 1000
 
 # Offsets shifted by +4 (Specials 0-3)
-# Raw: [0, 93, 193, 257, 293, 361, 494, 530]
 offsets: [ 4, 97, 197, 713, 749, 817, 950, 986 ]
 
 net:
   _target_: net.musicbert.MusicBERT
   
-  # Exact size from your script
+  # Exact size from script
   vocab_size: 1000
-  
   hidden_dim: 256
   num_layers: 6
   num_heads: 8
   max_seq_len: 512
-  
-  # CRITICAL: Now processing 8 attributes per note
   tokens_per_note: 8

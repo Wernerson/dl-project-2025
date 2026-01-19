@@ -3,7 +3,6 @@ import random
 import lightning as L
 import torch
 import torch.nn.functional as F
-from mask_vis import plot_mask_vis
 
 
 class MusicBertDiffusion(L.LightningModule):

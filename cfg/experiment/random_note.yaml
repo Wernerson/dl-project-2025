@@ -1,10 +1,6 @@
 # @package _global_
 
-defaults:
-  - override /dataset: miditok_full
-  - override /model: musicbert_diffusion_full
-
-experiment_name: one_note_masking
+experiment_name: "Random Note"
 
 # Dataset overrides to match your MidiTok config
 dataset:

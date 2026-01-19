@@ -1,6 +1,6 @@
 defaults:
-  - model: midi
-  - dataset: lakh-midi
+  - model: musicbert-diffusion
+  - dataset: lakh-midi-10k
   - logger: wandb
 
 experiment_name: base

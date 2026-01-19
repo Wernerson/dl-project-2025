@@ -2,7 +2,7 @@
 defaults:
   - probabilistic
 
-experiment_name: "Random"
+experiment_name: "Hierarchical USeq"
 
 model:
   mask_strategy:
@@ -10,12 +10,12 @@ model:
     mask_token_id: ${eval:${model.net.vocab_size}-1}
     samples_per_step: 8
     P_token: # probability per token in note, will be normalized (8 numbers)
-      - 1  # Pit
-      - 1  # Pos
-      - 1  # Bar
+      - 2  # Pit
+      - 4  # Pos
+      - 5  # Bar
       - 1  # Vel
       - 1  # Dur
-      - 1  # Pro
+      - 3  # Pro
       - 1  # Tem
       - 1  # Tim
     P_seq: # probability distribution in sequence, arbitrary length

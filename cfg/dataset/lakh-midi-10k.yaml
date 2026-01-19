@@ -1,11 +1,10 @@
-defaults:
-  - lakh-MIDI-10k
-
 _target_: dataset.miditok.MIDITok
+download_url: https://polybox.ethz.ch/index.php/s/o5AAC3naGYjKGQF/download/lakh-midi-10k-clean.tar.gz
+data_dir: "${paths.data_dir}"
 batch_size: 128
 max_seq_len: 128
 num_workers: 4
-
+splits: [ 0.7, 0.1, 0.2 ] # train, val, test
 
 tokenizer:
   _target_: miditok.Octuple
@@ -15,5 +14,5 @@ tokenizer:
       use_velocities: True
       use_tempos: True
       use_time_signatures: True
-      use_pitchdrum_tokens: False 
+      use_pitchdrum_tokens: False
       max_bar_embedding: 512
