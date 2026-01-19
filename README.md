@@ -36,6 +36,20 @@
 **Note:** The best checkpoint of each experiment will be saved in `./outputs/checkpoints/<experiment_name_here>/best.ckpt`, if you already want to schedule an evaluation before training completes.
 This file will be overridden by experiments with the same name tho.
 
+# Samples
+
+Here are two samples generated from one of our models:
+
+<video src='samples/sample_1.mp4'/>
+
+<video src='samples/sample_2.mp4'/>
+
+Here are two references files:
+
+<video src='samples/reference_1.mp4'/>
+
+<video src='samples/reference_2.mp4'/>
+
 # Experiments
 
 These experiment files (`<name>.yaml`) correspond to the experiments in the paper as follows:
