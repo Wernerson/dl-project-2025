@@ -32,14 +32,70 @@ This file will be overridden by experiments with the same name tho.
 
 # Experiments
 
+These experiment files (`<name>.yaml`) correspond to the experiments in the paper as follows:
+
+- `co-harch`: CoHierarchical
+- `co-harch-useq`: CoHierarchical USeq
+- `harch`: Hierarchical
+- `harch-useq`: Hierarchical USeq
+- `rand`: Random
+- `rand-note`: Random Note
+- `seq`: Sequential
+
+Run experiments with for example: `experiment=co-hierarchical`.
+
+# Masking Strategies
+
+Masking strategies that can be configured further by parameters.
+
+## `NoteMasking`
+
+Masks `t` entire nodes randomly per step noise step.
+Then unmasks one entire random note during the denoising step.
+
+No parameters.
+
+## `SequentialNoteMasking`
+
+Unmasks all tokens from front-to-back/left-to-right.
+
+No parameters.
+
+## `ProbabilisticMasking`
+
+Unmasks certain tokens with higher probability.
+
+Parameters:
+
+- `mask_token_id`: token ID to determine which tokens are not yet unmasked
+- `samples_per_step`: determines how many samples are unmasked per step, `k` in paper and always equals 8
+- `P_token`: 8 dimensional number array that determines token-probability, $P_{token}$ in paper
+- `P_seq`: $n$-dimensional number array that determines sequential probabilities, , $P_{seq}$ in paper
+
 # Repository Structure
 
-Important files, directories:
+Important files & directories:
 
 - `cfg/`: config files for [hydra](https://hydra.cc/docs/intro/), we configure and instantiate models, classes, etc.
-  - `dataset/*`: `lakh-MIDI-1k` is a smaller subset of `lakh-MIDI-10k` which we use for training/evaluation
+  - `dataset/*`: 
+    - `lakh-MIDI-10k.yaml`: about 10k samples of LMD, used for training & evaluation
+    - `lakh-MIDI-1k` is a smaller subset of LMD for development
   - `experiment/*`: see [Experiments](#experiments)
-  - `run/*`: run configurations for different environments, `dev` = quick runs for development, `cluster` = runs on cluster
+  - `run/*`: run configurations for different environments, set by `run=x`
+    - `dev.yaml`: quick runs for development
+    - `cluster.yaml`: runs on cluster
   - `config.yaml`: basic configuration parameters for all runs
 - `src/`: Python files/code
-  - `dataset`
+  - `callbacks/generation.py`: creates samples each epoch & logs them to WandB
+  - `dataset/miditok.py`: [Lightning DataModule](https://lightning.ai/docs/pytorch/stable/data/datamodule.html) that downloads, extracts and splits LMD
+  - `metrics/common.py`: extracts common [MusPy](https://muspy.readthedocs.io/en/stable/) metrics
+  - `metrics/fmd.py`: extracts [Frechet Music Distance](https://github.com/jryban/frechet-music-distance)
+  - `model/mask.py`: different masking strategies, see [Masking Strategies](#masking-strategies)
+  - `model/musicbert_diffusion.py`: [Lightning Module](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html) 
+  - `net/musicbert.py`: the MusicBERT-derived model (neural net)
+  - `config.py`: [hydra](https://hydra.cc/docs/intro/) `eval` resolver
+  - `eval.py`: **main script for evaluation**
+  - `evaluator.py`: copying reference files, generating samples & running metrics (in `metrics/*`)
+  - `mask_vis.py`: script to visualise different masks 
+  - `train.py`: **main script for training**
+  - `utils.py`: MIDI to audio conversion

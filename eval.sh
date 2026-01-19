@@ -5,7 +5,7 @@
 #SBATCH --mem=24G
 
 if [ -z "$1" ]; then
-    echo "You must pass an experiment, e.g. 'miditok'"
+    echo "You must pass an experiment, e.g. 'hierarchical'"
     exit 1
 fi
 
