@@ -40,9 +40,21 @@ This file will be overridden by experiments with the same name tho.
 
 Here are two samples generated from one of our models:
 
-<video src='samples/sample_1.mp4'/>
+<audio controls>
+  <source src="samples/sample_1.wav" type="audio/mpeg">
+</audio>
 
-<video src='samples/sample_2.mp4'/>
+<audio controls>
+  <source src="samples/sample_1.mp4" type="audio/mpeg">
+</audio>
+
+<audio controls>
+  <source src="https://github.com/Wernerson/dl-project-2025/raw/refs/heads/master/samples/reference_1.wav" type="audio/mpeg">
+</audio>
+
+<audio controls>
+  <source src="https://github.com/Wernerson/dl-project-2025/raw/refs/heads/master/samples/reference_1.mp4" type="audio/mpeg">
+</audio>
 
 Here are two references files:
 
