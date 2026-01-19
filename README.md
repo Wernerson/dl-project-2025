@@ -21,7 +21,13 @@
     - `wandb login <key>`
 - Run jobs  (on cluster)
   - Training: `sbatch run.sh <experiment name here>`
+    - Note that this might take hours
+    - Maybe adjust the parameters in `cfg/config.yaml`
+    - e.g., `max_epochs: 1` or `dataset: lakh-midi-1k`
   - Evaluation: `sbatch eval.sh <experiment name here> <path/to/some.ckpt>`
+    - Note that this might take minutes
+    - Maybe adjust the number of samples in `cfg/config.yaml`
+    - `num_samples: 10000` under `evaluator:`
   - [Running jobs](https://www.isg.inf.ethz.ch/Main/HelpClusterComputingStudentClusterRunningJobs)
 - Local/dev runs (quick runs for development)
   - Training: `python src/main.py +experiment=<experiment name here> +run=dev`
