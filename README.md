@@ -36,6 +36,7 @@
 - Local/dev runs (quick runs for development)
   - Training: `python src/main.py +experiment=<experiment name here> +run=dev`
   - Evaluation: `python src/eval.py +experiment=<experiment name here> +run=dev +checkpoint=\"<path/to/some.ckpt>\"`
+    - Note that the `\"` is required here 
 
 **Note:** The best checkpoint of each experiment will be saved in `./outputs/checkpoints/<experiment_name_here>/best.ckpt`, if you already want to schedule an evaluation before training completes.
 This file will be overridden by experiments with the same name tho.
