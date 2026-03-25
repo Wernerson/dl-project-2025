@@ -314,8 +314,17 @@ class MusicBertDiffusion(L.LightningModule):
             # Best tokens
             best_confidence, best_tokens = probs.max(dim=-1)
 
-            # 3. Decision Rule
-            should_swap = (curr_confidence < threshold_remove) & (best_confidence > threshold_add)
+            # 1. Don't touch existing PADs
+            is_existing_pad = (x_curr == self.pad_token_id)
+
+            # 2. Don't create NEW PADs (The cause of your error)
+            is_new_pad = (best_tokens == self.pad_token_id)
+
+            # Decision Rule:
+            should_swap = (curr_confidence < threshold_remove) & \
+                          (best_confidence > threshold_add) & \
+                          (~is_existing_pad) & \
+                          (~is_new_pad)
 
             # 4. Count and Swap
             num_swaps = should_swap.sum().item()
