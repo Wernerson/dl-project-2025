@@ -13,6 +13,7 @@ class MusicBertDiffusion(L.LightningModule):
             offsets, mask_strategy,
             denoise_mask_loss=False,
             denoise_mask_fw=True,
+            error_correct = False
     ):
         super().__init__()
         self.net = net
@@ -21,6 +22,7 @@ class MusicBertDiffusion(L.LightningModule):
         self.mask_strategy = mask_strategy
         self.denoise_mask_loss = denoise_mask_loss
         self.denoise_mask_fw = denoise_mask_fw
+        self.error_correct = error_correct
 
         # Register offsets buffer
         self.register_buffer('offsets', torch.tensor(offsets, dtype=torch.long))
@@ -120,33 +122,89 @@ class MusicBertDiffusion(L.LightningModule):
                                torch.tensor(self.pad_token_id, device=self.device),
                                x_offset)
 
-        # Mask
-        x_masked = torch.where(noise_mask,
-                               torch.tensor(self.mask_token_id, device=self.device),
-                               x_offset)
+        if self.error_correct:
+            # === NEW GIDD APPROACH ===
+            prob_noise = 0.1
+            rand_tensor = torch.rand_like(x_0.float())
 
-        # flatten
-        x_t_flat = x_masked.view(batch_size, -1)
+            # 1. Identify Uniform Noise Targets
+            # (Not masked, Not padding, but selected for noise)
+            uniform_mask = (rand_tensor < prob_noise) & (~noise_mask) & (~padding)
 
-        # compute logits
-        logits = self.compute_logits(x_t_flat, apply_constraints=False)
+            # 2. Generate Structure-Preserving Random Tokens
+            # Bounds = [Offset_0, Offset_1, ..., MaskTokenID]
+            bounds = torch.cat([self.offsets, torch.tensor([self.mask_token_id], device=self.device)])
+            valid_random_tokens = torch.zeros_like(x_offset)
 
-        if self.denoise_mask_loss:
-            # get denoise mask, these are the relevant tokens we want to predict at timestamp t
-            denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
-            denoise_mask = denoise_mask & (~padding)
+            for i in range(num_attribs):
+                low = bounds[i]
+                high = bounds[i + 1]
+                valid_random_tokens[:, :, i] = torch.randint(
+                    low, high, (batch_size, seq_len), device=self.device
+                )
 
-            # Loss
-            masked_logits = logits[denoise_mask]
-            masked_targets = x_offset[denoise_mask]
+            # 3. Apply Corruption (Masking + Uniform Noise)
+            x_masked = x_offset.clone()
+
+            # Apply Masks
+            x_masked = torch.where(noise_mask,
+                                   torch.tensor(self.mask_token_id, device=self.device),
+                                   x_masked)
+            # Apply Noise
+            x_masked = torch.where(uniform_mask, valid_random_tokens, x_masked)
+
+            # 4. Compute Logits
+            x_t_flat = x_masked.view(batch_size, -1)
+            logits = self.compute_logits(x_t_flat, apply_constraints=False)
+
+            # 5. Compute Loss
+            # GIDD Target: Predict everything that was corrupted (Masked OR Noised)
+
+            if self.denoise_mask_loss:
+                # If using strategy-specific targets, add uniform targets to them
+                denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
+                final_target_mask = denoise_mask | uniform_mask
+            else:
+                # Standard: predict all corruptions
+                final_target_mask = noise_mask | uniform_mask
+
+            final_target_mask = final_target_mask & (~padding)
+
+            masked_logits = logits[final_target_mask]
+            masked_targets = x_offset[final_target_mask]
+
+            if masked_targets.numel() == 0:
+                return torch.tensor(0.0, device=self.device, requires_grad=True)
+
+            return F.cross_entropy(masked_logits, masked_targets)
+
         else:
-            masked_logits = logits[noise_mask]
-            masked_targets = x_offset[noise_mask]
+            # Mask
+            x_masked = torch.where(noise_mask,
+                                   torch.tensor(self.mask_token_id, device=self.device),
+                                   x_offset)
+            # flatten
+            x_t_flat = x_masked.view(batch_size, -1)
 
-        if masked_targets.numel() == 0:
-            return torch.tensor(0.0, device=self.device, requires_grad=True)
+            # compute logits
+            logits = self.compute_logits(x_t_flat, apply_constraints=False)
 
-        return F.cross_entropy(masked_logits, masked_targets)
+            if self.denoise_mask_loss:
+                # get denoise mask, these are the relevant tokens we want to predict at timestamp t
+                denoise_mask = self.mask_strategy.denoise_mask(x_masked, t)
+                denoise_mask = denoise_mask & (~padding)
+
+                # Loss
+                masked_logits = logits[denoise_mask]
+                masked_targets = x_offset[denoise_mask]
+            else:
+                masked_logits = logits[noise_mask]
+                masked_targets = x_offset[noise_mask]
+
+            if masked_targets.numel() == 0:
+                return torch.tensor(0.0, device=self.device, requires_grad=True)
+
+            return F.cross_entropy(masked_logits, masked_targets)
 
     def training_step(self, batch, batch_idx):
         x = batch["input_ids"] if isinstance(batch, dict) else batch
@@ -226,3 +284,55 @@ class MusicBertDiffusion(L.LightningModule):
                 "interval": "step"  # Update every step, not every epoch
             }
         }
+
+    def self_correct(self, x_generated, iterations=5, threshold_remove=0.1, threshold_add=0.9):
+        """
+        GIDD Self-Correction Step.
+        Args:
+            x_generated: output from sample() [Batch, Seq, 8] (without offsets)
+        """
+        # Add offsets back (internal model needs global indices)
+        x_curr = x_generated + self.offsets
+
+        stats = {
+            "total_corrections": 0,
+            "corrections_per_step": []
+        }
+
+        for i in range(iterations):
+            # 1. Compute Logits
+            x_flat = x_curr.view(x_curr.size(0), -1)
+            logits = self.compute_logits(x_flat, apply_constraints=True)
+            probs = F.softmax(logits, dim=-1)
+
+            # 2. Get Confidence
+            # Current tokens
+            curr_indices = x_curr.unsqueeze(-1)
+            curr_confidence = probs.gather(-1, curr_indices).squeeze(-1)
+
+            # Best tokens
+            best_confidence, best_tokens = probs.max(dim=-1)
+
+            # 1. Don't touch existing PADs
+            is_existing_pad = (x_curr == self.pad_token_id)
+
+            # 2. Don't create NEW PADs (The cause of your error)
+            is_new_pad = (best_tokens == self.pad_token_id)
+
+            # Decision Rule:
+            should_swap = (curr_confidence < threshold_remove) & \
+                          (best_confidence > threshold_add) & \
+                          (~is_existing_pad) & \
+                          (~is_new_pad)
+
+            # 4. Count and Swap
+            num_swaps = should_swap.sum().item()
+            stats["total_corrections"] += num_swaps
+            stats["corrections_per_step"].append(num_swaps)
+
+            x_curr = torch.where(should_swap, best_tokens, x_curr)
+
+            if num_swaps == 0:
+                break
+
+        return x_curr - self.offsets, stats

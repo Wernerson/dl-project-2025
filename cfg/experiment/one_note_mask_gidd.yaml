@@ -1,0 +1,13 @@
+# @package _global_
+defaults:
+  - one_note_mask  # Inherits all settings from your original experiment
+
+experiment_name: one_note_masking_gidd
+
+# Enable GIDD Training (Uniform Noise)
+model:
+  error_correct: True
+
+# Enable GIDD Evaluation (Self-Correction Step)
+evaluator:
+  use_self_correction: True
